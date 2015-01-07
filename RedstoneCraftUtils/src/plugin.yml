@@ -1,0 +1,42 @@
+name: RedstoneCraftUtils
+main: org.primesoft.redstoneCraftUtils.RCUtilsMain
+version: 0.1
+website: 
+description: Util commands required by my server
+authors: [SBPrime]
+depend: []
+softdepend: []
+commands:
+  setblock:
+    description: 'Set block on map'
+    usage: /<command>
+    aliases: 
+  getCommandBlock:
+    description: 'Get command block'
+    usage: /<command>
+    aliases: 
+  getBlockName:
+    description: 'Get command block name'
+    usage: /<command>
+    aliases: 
+  setBlockName:
+    description: 'Set command block name'
+    usage: /<command>
+    aliases:       
+  getBlockCommand:
+    description: 'Get command block command'
+    usage: /<command>
+    aliases: 
+  setBlockCommand:
+    description: 'Set command block command'
+    usage: /<command>
+    aliases: 
+  reloadBb:
+    description: 'Reload command block'
+    usage: /<command>
+    aliases: 
+  test:
+    description: 'Perform the test command'
+    usage: /<command>
+    aliases: 
+permissions:
