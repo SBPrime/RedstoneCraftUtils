@@ -1,17 +1,19 @@
 RCUtils:
-  AllowedCommands:
-    - testfor
-    - tell
-    - tp
-    - msg
-    - setBlock
-    - gmc
-    - gms
-    - gamemode
-    - give
-    - clear
-    - ci
-    - time
-    - settime
-    - effect
-    - playsound
+  commandBlocks:
+    isEnabled: true
+    allowedCommands:
+      - testfor
+      - tell
+      - tp
+      - msg
+      - setBlock
+      - gmc
+      - gms
+      - gamemode
+      - give
+      - clear
+      - ci
+      - time
+      - settime
+      - effect
+      - playsound

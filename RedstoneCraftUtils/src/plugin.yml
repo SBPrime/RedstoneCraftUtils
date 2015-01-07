@@ -1,42 +1,69 @@
 name: RedstoneCraftUtils
 main: org.primesoft.redstoneCraftUtils.RCUtilsMain
-version: 0.1
+version: 0.2
 website: 
 description: Util commands required by my server
 authors: [SBPrime]
 depend: []
 softdepend: []
-commands:
-  setblock:
-    description: 'Set block on map'
-    usage: /<command>
-    aliases: 
-  getCommandBlock:
-    description: 'Get command block'
-    usage: /<command>
-    aliases: 
-  getBlockName:
+commands:  
+  commandBlockGetName:
     description: 'Get command block name'
+    permission: RCUtils.CommandBlock.GetName
     usage: /<command>
-    aliases: 
-  setBlockName:
+    aliases: cbgetname
+  commandBlockSetName:
     description: 'Set command block name'
+    permission: RCUtils.CommandBlock.SetName
     usage: /<command>
-    aliases:       
-  getBlockCommand:
+    aliases: cbsetname
+  commandBlockGetCommand:
     description: 'Get command block command'
+    permission: RCUtils.CommandBlock.GetCommand
     usage: /<command>
-    aliases: 
-  setBlockCommand:
+    aliases: cbgetcommand
+  commandBlockSetCommand:
     description: 'Set command block command'
+    permission: RCUtils.CommandBlock.SetCommand
     usage: /<command>
-    aliases: 
-  reloadBb:
-    description: 'Reload command block'
-    usage: /<command>
-    aliases: 
-  test:
-    description: 'Perform the test command'
+    aliases: cbsetcommand
+  rcreload:
+    description: 'Reload the redstone craft utils configuration'
+    permission: RCUtils.Reload
     usage: /<command>
     aliases: 
 permissions:
+  RCUtils.*:
+    description: Grants access to all RedstoneCraftUtils commands permissions
+    default: op
+    children:
+      RCUtils.CommandBlock.*: true
+      RCUtils.Reload: true
+  RCUtils.Reload:
+    description: Grants access to reload configuration command
+    default: op
+  RCUtils.CommandBlock.*:
+    description: Grants access to all CommandBlocks commands permissions
+    default: op
+    children:
+      RCUtils.CommandBlock.GetBlock: true
+      RCUtils.CommandBlock.GetName: true
+      RCUtils.CommandBlock.SetName: true
+      RCUtils.CommandBlock.GetCommand: true
+      RCUtils.CommandBlock.SetCommand: true
+  RCUtils.CommandBlock.GetBlock:
+    description: Grants access to commandBlockGet command
+    default: op
+  RCUtils.CommandBlock.GetName:
+    description: Grants access to commandBlockGetName command
+    default: op
+  RCUtils.CommandBlock.SetName:
+    description: Grants access to commandBlockSetName command
+    default: op
+  RCUtils.CommandBlock.GetCommand:
+    description: Grants access to commandBlockGetCommand command
+    default: op
+  RCUtils.CommandBlock.SetCommand:
+    description: Grants access to commandBlockSetCommand command
+    default: op
+    
