@@ -64,10 +64,10 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Command {
+public @interface CommandDescriptor {
     String command() default "";
     String description() default "";
     String permission() default "";
     String usage() default "";
-    String[] aliases() default "";
+    String[] aliases();
 }

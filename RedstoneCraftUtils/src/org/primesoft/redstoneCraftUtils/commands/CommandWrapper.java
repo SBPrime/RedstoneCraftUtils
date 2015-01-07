@@ -50,37 +50,31 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.primesoft.redstoneCraftUtils.commands;
 
-import org.bukkit.Material;
+import java.lang.reflect.Method;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.primesoft.redstoneCraftUtils.RCUtilsMain;
-import static org.primesoft.redstoneCraftUtils.RCUtilsMain.say;
+import org.primesoft.redstoneCraftUtils.utils.Reflection;
 
 /**
  *
  * @author SBPrime
  */
-public class CommandBlockCommands {
-    @CommandDescriptor(
-            command = "commandBlockGet",
-            aliases = {"cbget"},
-            usage = "/<command>",
-            permission = "RCUtils.CommandBlock.GetBlock",
-            description = "Get command block"
-    )
-    public static boolean commandBlockGet(Player player, String[] args) 
-    {
-        if (player == null) {
-            RCUtilsMain.say(player, "Command available only ingame");
-            return true;
-        }
+public class CommandWrapper extends BaseCommand {
+    private final Command m_command;
+    private final Method m_method;
+    
+    public CommandWrapper(Method method, Command command) {
+        m_command = command;
+        m_method = method;
+    }
 
-        final ItemStack is = new ItemStack(Material.COMMAND, 64);
-        player.setItemInHand(is);
-        return true;
+    @Override
+    public boolean onCommand(CommandSender cs, Command cmnd, String name, String[] args) {
+        return Reflection.invoke(name, boolean.class, m_method, 
+                "Unable to invoke command", 
+                (Player)((cs instanceof Player) ? (Player)cs : null), args);        
     }
 }

@@ -57,7 +57,6 @@ package org.primesoft.redstoneCraftUtils;
  * @author SBPrime
  */
 public final class Commands {    
-    public final static String COMMAND_GETCOMMANDBLOCK = "getCommandBlock";
     public final static String COMMAND_GETBLOCKNAME = "getBlockName";
     public final static String COMMAND_SETBLOCKNAME = "setBlockName";
     public final static String COMMAND_GETBLOCKCOMMAND = "getBlockCommand";

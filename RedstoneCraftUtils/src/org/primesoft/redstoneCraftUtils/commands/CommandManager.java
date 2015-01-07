@@ -52,10 +52,15 @@
  */
 package org.primesoft.redstoneCraftUtils.commands;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.SimplePluginManager;
@@ -76,6 +81,12 @@ public class CommandManager {
      * The command map
      */
     private final CommandMap m_commandMap;
+    
+    
+    /**
+     * The plugin command creator
+     */
+    private final Constructor<?> m_commandCtor;
 
     public CommandManager(Plugin plugin) {
         m_plugin = plugin;
@@ -88,6 +99,8 @@ public class CommandManager {
             m_commandMap = null;
         }
 
+        m_commandCtor = Reflection.findConstructor(PluginCommand.class, 
+                "Unable to get the pluginCommand constructor", String.class, Plugin.class);
     }
 
     /**
@@ -98,14 +111,30 @@ public class CommandManager {
     public void initializeCommands(Class<?> cls) {
         Method[] methods = cls.getMethods();
         for (Method method : methods) {
-            if (method.isAnnotationPresent(Command.class)) {
-                installCommand(method, method.getAnnotation(Command.class));
+            if (method.isAnnotationPresent(CommandDescriptor.class)) {
+                installCommand(method, method.getAnnotation(CommandDescriptor.class));
             }
         }
     }
 
-    private void installCommand(Method method, Command cd) {
-        PluginCommand command = null;
+    private void installCommand(Method method, CommandDescriptor cd) {
+        if (m_commandCtor == null || m_commandMap == null) {
+            return;
+        }
+        
+        PluginCommand command = Reflection.create(PluginCommand.class, m_commandCtor, 
+                "Unable to create command", cd.command(), m_plugin);
+        String[] aliases = cd.aliases();
+        if (aliases != null && aliases.length > 0) {
+            command.setAliases(Arrays.asList(aliases));
+        }
+        
+        CommandWrapper cdWrapper = new CommandWrapper(method, command);
+        command.setDescription(cd.description());
+        command.setExecutor(cdWrapper);
+        command.setPermission(cd.permission());
+        command.setTabCompleter(cdWrapper);
+        command.setUsage(cd.usage());
         
         m_commandMap.register(m_plugin.getDescription().getName(), command);
     }

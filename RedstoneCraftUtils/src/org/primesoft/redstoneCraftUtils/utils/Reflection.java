@@ -52,7 +52,10 @@
  */
 package org.primesoft.redstoneCraftUtils.utils;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.primesoft.redstoneCraftUtils.RCUtilsMain;
 
@@ -65,6 +68,72 @@ public class Reflection {
 
     private static void log(String m) {
         RCUtilsMain.log(m);
+    }
+
+    public static <T> T invoke(Object instance, Class<T> resultClass,
+            Method method, String message, Object... args) {
+        try {
+            method.setAccessible(true);
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            boolean accessible = modifiersField.isAccessible();
+            if (!accessible) {
+                modifiersField.setAccessible(true);
+            }
+            try {
+                return resultClass.cast(method.invoke(instance, args));
+            } finally {
+                if (!accessible) {
+                    modifiersField.setAccessible(false);
+                }
+            }
+        } catch (InvocationTargetException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (IllegalArgumentException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (IllegalAccessException ex) {
+            ExceptionHelper.printException(ex, message + ": security exception.");
+        } catch (NoSuchFieldException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (SecurityException ex) {
+            ExceptionHelper.printException(ex, message + ": security exception.");
+        } catch (ClassCastException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version, unable to cast result.");
+        }
+        return null;
+    }
+
+    public static <T> T create(Class<T> resultClass,
+            Constructor<?> ctor, String message, Object... args) {
+        try {
+            ctor.setAccessible(true);
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            boolean accessible = modifiersField.isAccessible();
+            if (!accessible) {
+                modifiersField.setAccessible(true);
+            }
+            try {
+                return resultClass.cast(ctor.newInstance(args));
+            } finally {
+                if (!accessible) {
+                    modifiersField.setAccessible(false);
+                }
+            }
+        } catch (InstantiationException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (InvocationTargetException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (IllegalArgumentException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (IllegalAccessException ex) {
+            ExceptionHelper.printException(ex, message + ": security exception.");
+        } catch (NoSuchFieldException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
+        } catch (SecurityException ex) {
+            ExceptionHelper.printException(ex, message + ": security exception.");
+        } catch (ClassCastException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version, unable to cast result.");
+        }
+        return null;
     }
 
     public static <T> T get(Class<?> sourceClass, Class<T> fieldClass,
@@ -194,13 +263,24 @@ public class Reflection {
                 }
             }
         } catch (IllegalArgumentException ex) {
-            log(message + ": unsupported version.");
+            ExceptionHelper.printException(ex, message + ": unsupported version.");
         } catch (IllegalAccessException ex) {
-            log(message + ": security exception.");
+            ExceptionHelper.printException(ex, message + ": security exception.");
         } catch (NoSuchFieldException ex) {
-            log(message + ": unsupported version, field modifiers not found.");
+            ExceptionHelper.printException(ex, message + ": unsupported version, field modifiers not found.");
         } catch (SecurityException ex) {
-            log(message + ": security exception.");
+            ExceptionHelper.printException(ex, message + ": security exception.");
         }
+    }
+
+    public static Constructor<?> findConstructor(Class<?> c, String message, Class<?>... paramTypes) {
+        try {
+            return c.getDeclaredConstructor(paramTypes);
+        } catch (NoSuchMethodException ex) {
+            ExceptionHelper.printException(ex, message + ": unsupported version, constructor not found.");
+        } catch (SecurityException ex) {
+            ExceptionHelper.printException(ex, message + ": security exception.");
+        }
+        return null;
     }
 }

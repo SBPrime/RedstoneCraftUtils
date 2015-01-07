@@ -59,7 +59,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.CommandBlock;
@@ -68,7 +67,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
@@ -148,9 +146,7 @@ public class RCUtilsMain extends JavaPlugin {
         }
 
         String cmd = command.getName();
-        if (cmd.equalsIgnoreCase(Commands.COMMAND_GETCOMMANDBLOCK) && PermissionManager.isAllowed(player, PermissionManager.Perms.GetCommandBlock)) {
-            return doGetCommandBlock(player);
-        } else if (cmd.equalsIgnoreCase(Commands.COMMAND_GETBLOCKNAME) && PermissionManager.isAllowed(player, PermissionManager.Perms.GetName)) {
+        if (cmd.equalsIgnoreCase(Commands.COMMAND_GETBLOCKNAME) && PermissionManager.isAllowed(player, PermissionManager.Perms.GetName)) {
             return doGetName(player);
         } else if (cmd.equalsIgnoreCase(Commands.COMMAND_SETBLOCKNAME) && PermissionManager.isAllowed(player, PermissionManager.Perms.SetName)) {
             return doSetName(player, args);
@@ -166,18 +162,6 @@ public class RCUtilsMain extends JavaPlugin {
             return true;
         }
         return false;
-    }
-
-    private boolean doGetCommandBlock(Player player) {
-        if (player == null) {
-            say(player, "Command available only ingame");
-            return true;
-        }
-
-        final ItemStack is = new ItemStack(Material.COMMAND, 64);
-        player.setItemInHand(is);
-
-        return true;
     }
 
     /**
