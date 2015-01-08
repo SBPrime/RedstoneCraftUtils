@@ -101,7 +101,7 @@ public class CommandBlockCommands {
             description = "Get command block"
     )
     public static boolean commandBlockGet(Player player) {
-        if (!ConfigProvider.isCbEnabled()) {
+        if (!ConfigProvider.getCommandBlockConfig().isEnabled()) {
             return false;
         }
 
@@ -118,7 +118,7 @@ public class CommandBlockCommands {
             permission = "RCUtils.CommandBlock.GetName"
     )
     public static boolean commandBlockGetName(Player player) {
-        if (!ConfigProvider.isCbEnabled()) {
+        if (!ConfigProvider.getCommandBlockConfig().isEnabled()) {
             return false;
         }
 
@@ -141,7 +141,7 @@ public class CommandBlockCommands {
             permission = "RCUtils.CommandBlock.SetName"
     )
     public static boolean commandBlockSetName(Player player, String[] args) {
-        if (!ConfigProvider.isCbEnabled()) {
+        if (!ConfigProvider.getCommandBlockConfig().isEnabled()) {
             return false;
         }
 
@@ -178,7 +178,7 @@ public class CommandBlockCommands {
             permission = "RCUtils.CommandBlock.GetCommand"
     )
     public static boolean commandBlockGetCommand(Player player) {
-        if (!ConfigProvider.isCbEnabled()) {
+        if (!ConfigProvider.getCommandBlockConfig().isEnabled()) {
             return false;
         }
 
@@ -201,7 +201,7 @@ public class CommandBlockCommands {
             permission = "RCUtils.CommandBlock.SetCommand"
     )
     public static boolean commandBlockSetCommand(Player player, String[] args) {
-        if (!ConfigProvider.isCbEnabled()) {
+        if (!ConfigProvider.getCommandBlockConfig().isEnabled()) {
             return false;
         }
 
@@ -215,14 +215,13 @@ public class CommandBlockCommands {
             say(player, "You need to look at a command block");
             return true;
         }
-
-        HashSet<String> allowed = ConfigProvider.getCbAllowedCommands();
+        
         String cmd = args[0].toLowerCase();
         if (cmd.startsWith("/")) {
             cmd = cmd.substring(1);
         }
 
-        if (!allowed.contains(cmd) && !player.isOp()) {
+        if (!ConfigProvider.getCommandBlockConfig().isAllowed(cmd) && !player.isOp()) {
             say(player, ChatColor.RED + "Command " + ChatColor.WHITE + cmd + ChatColor.RED + " not allowed.");
             return true;
         }

@@ -38,7 +38,6 @@
  *     * no donations system in place
  * 11. If you want to use this plugin on a server that brings you money contact
  *     the plugin author for sublicense.
-
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -53,67 +52,66 @@
  */
 package org.primesoft.redstoneCraftUtils;
 
-import org.bukkit.configuration.Configuration;
+import java.util.HashSet;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.plugin.java.JavaPlugin;
-
 
 /**
- * This class contains configuration
  *
  * @author SBPrime
  */
-public class ConfigProvider {        
+public class CommandBlockConfig {
     /**
-     * The command block configuration
+     * The default command block configuration
      */
-    private static CommandBlockConfig m_cbConfig = CommandBlockConfig.parse(null);
-    
-    /**
-     * The auto stop configuration
-     */
-    private static AutoStopConfig m_autoStopConfig = AutoStopConfig.parse(null);
+    private final static CommandBlockConfig m_default = new CommandBlockConfig(false, null);    
     
     
     /**
-     * The commandblock configuration
+     * parse the configuration section
+     * @param section
      * @return 
      */
-    public static CommandBlockConfig getCommandBlockConfig() {
-        return m_cbConfig;
-    }
-    
-    
-    /**
-     * The auto stop configuration
-     * @return 
-     */
-    public static AutoStopConfig getAutoStopConfig() {
-        return m_autoStopConfig;
-    }
-    
-    /**
-     * Load configuration
-     *
-     * @param plugin parent plugin
-     * @return true if config loaded
-     */
-    public static boolean load(JavaPlugin plugin) {
-        if (plugin == null) {
-            return false;
+    public static CommandBlockConfig parse(ConfigurationSection section) {
+        if (section == null) {
+            return m_default;
         }
-
-        plugin.saveDefaultConfig();        
-
-        Configuration config = plugin.getConfig();
-        ConfigurationSection mainSection = config.getConfigurationSection("RCUtils");
-        if (mainSection == null) {
-            return false;
-        }
-
-        m_cbConfig = CommandBlockConfig.parse(mainSection.getConfigurationSection("commandBlocks"));
-        m_autoStopConfig = AutoStopConfig.parse(mainSection.getConfigurationSection("autoStop"));
         
-        return true;
+        return new CommandBlockConfig(
+                section.getBoolean("isEnabled", false),
+                section.getStringList("allowedCommands")
+        );
+    }
+    
+    private final HashSet<String> m_allowedCommands = new HashSet(); 
+    private final boolean m_isEnabled;
+
+    /**
+     * Is the command allowed
+     * @param command
+     * @return 
+     */
+    public boolean isAllowed(String command) {
+        return command != null &&  m_allowedCommands.contains(command);
+    }
+    
+    /**
+     * Is commandblock enabled
+     * @return 
+     */
+    public boolean isEnabled() {
+        return m_isEnabled;
+    }
+    
+    
+    private CommandBlockConfig(boolean  isEnabled, Iterable<String> allowedCommands) {
+        m_isEnabled = isEnabled;
+        if (allowedCommands != null) {
+            for (String s : allowedCommands) {
+                s = s.toLowerCase();
+                if (!m_allowedCommands.contains(s)) {
+                    m_allowedCommands.add(s);
+                }
+            }
+        }                
     }
 }

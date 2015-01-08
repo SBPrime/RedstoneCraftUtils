@@ -1,4 +1,7 @@
 RCUtils:
+  autoStop:
+    isEnabled: true
+    time: 120
   commandBlocks:
     isEnabled: true
     allowedCommands:
