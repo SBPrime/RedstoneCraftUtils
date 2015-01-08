@@ -54,21 +54,15 @@ package org.primesoft.redstoneCraftUtils;
 
 //import com.iKeirNez.PluginMessageApiPlus.implementations.BukkitPacketManager;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.CommandBlock;
-import org.bukkit.command.BlockCommandSender;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.primesoft.redstoneCraftUtils.commands.CommandBlockCommands;
+import org.primesoft.redstoneCraftUtils.commands.GlobalCommands;
+import org.primesoft.redstoneCraftUtils.commands.utils.CommandManager;
 import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
 
 /**
@@ -82,10 +76,11 @@ public class RCUtilsMain extends JavaPlugin {
 
     private static String s_prefix = null;
 
-    private static String s_logFormat = "%s %s";
+    private static final String s_logFormat = "%s %s";
 
     private MetricsLite m_metrics;
-//    private BukkitPacketManager m_packetManager;    
+    
+    private CommandManager m_commandManager;
 
     public static void log(String msg) {
         if (s_log == null || msg == null || s_prefix == null) {
@@ -103,14 +98,11 @@ public class RCUtilsMain extends JavaPlugin {
         }
     }
 
-    /*    public BukkitPacketManager getPacketManager()
-     {
-     return m_packetManager;
-     }*/
     @Override
     public void onEnable() {
         PluginDescriptionFile desc = getDescription();
         s_prefix = String.format("[%s]", desc.getName());
+        s_console = getServer().getConsoleSender();
 
         try {
             m_metrics = new MetricsLite(this);
@@ -124,188 +116,16 @@ public class RCUtilsMain extends JavaPlugin {
             log("Error loading config");
         }
 
-        s_console = getServer().getConsoleSender();
+        
+        m_commandManager = new CommandManager(this);
+        m_commandManager.initializeCommands(GlobalCommands.class);
+        m_commandManager.initializeCommands(CommandBlockCommands.class);
+                
         log("Enabled");
     }
 
     @Override
     public void onDisable() {
         log("Disabled");
-    }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label,
-                             String[] args) {
-        Player player = (sender instanceof Player) ? (Player) sender : null;
-        BlockCommandSender block = (sender instanceof BlockCommandSender) ? (BlockCommandSender) sender : null;
-        Location location = null;
-        if (player != null) {
-            location = player.getLocation();
-        } else if (block != null) {
-            location = block.getBlock().getLocation();
-        }
-
-        String cmd = command.getName();
-        if (cmd.equalsIgnoreCase(Commands.COMMAND_GETBLOCKNAME) && PermissionManager.isAllowed(player, PermissionManager.Perms.GetName)) {
-            return doGetName(player);
-        } else if (cmd.equalsIgnoreCase(Commands.COMMAND_SETBLOCKNAME) && PermissionManager.isAllowed(player, PermissionManager.Perms.SetName)) {
-            return doSetName(player, args);
-        } else if (cmd.equalsIgnoreCase(Commands.COMMAND_SETBLOCKCOMMAND) && PermissionManager.isAllowed(player, PermissionManager.Perms.SetCommand)) {
-            return doSetCommand(player, args);
-        } else if (cmd.equalsIgnoreCase(Commands.COMMAND_GETBLOCKCOMMAND) && PermissionManager.isAllowed(player, PermissionManager.Perms.GetCommand)) {
-            return doGetCommand(player);
-        } else if (cmd.equalsIgnoreCase(Commands.COMMAND_RELOADCOMMAND) && PermissionManager.isAllowed(player, PermissionManager.Perms.Reload)) {
-            doReloadConfig(player);
-            return true;
-        } else if (cmd.equalsIgnoreCase(Commands.COMMAND_TESTCOMMAND) && player.isOp()) {
-            doTestCommand(player);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Do reload configuration command
-     *
-     * @param player
-     */
-    private void doReloadConfig(Player player) {
-        log(player != null ? player.getName() : "console " + " reloading config...");
-
-        reloadConfig();
-
-        if (!ConfigProvider.load(this)) {
-            say(player, "Error loading config");
-            return;
-        }
-
-        say(player, "Config reloaded");
-    }
-
-    private CommandBlock getComandBlock(Player player) {
-        Block b = player.getTargetBlock(null, 200);
-        if (b == null) {
-            return null;
-        }
-        BlockState bs = b.getState();
-        if (bs == null || !(bs instanceof CommandBlock)) {
-            return null;
-        }
-
-        return (CommandBlock) bs;
-    }
-
-    private boolean doGetName(Player player) {
-        if (player == null) {
-            say(player, "Command available only ingame");
-            return true;
-        }
-
-        CommandBlock cb = getComandBlock(player);
-        if (cb == null) {
-            say(player, "You need to look at a command block");
-            return true;
-        }
-
-        say(player, ChatColor.BLUE + "Block name: " + ChatColor.WHITE + cb.getName());
-
-        return true;
-    }
-
-    private boolean doSetName(Player player, String[] args) {
-        if (player == null) {
-            say(player, "Command available only ingame");
-            return true;
-        }
-
-        if (args.length < 1) {
-            say(player, "Usage: " + Commands.COMMAND_SETBLOCKNAME + " <name>");
-            return true;
-        }
-
-        CommandBlock cb = getComandBlock(player);
-        if (cb == null) {
-            say(player, "You need to look at a command block");
-            return true;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (String s : args) {
-            sb.append(s);
-            sb.append(" ");
-        }
-
-        String name = sb.toString().trim();
-        cb.setName(name);
-        cb.update(true, true);
-        say(player, ChatColor.BLUE + "New name: " + ChatColor.WHITE + name);
-
-        return true;
-    }
-
-    private boolean doSetCommand(Player player, String[] args) {
-        if (player == null) {
-            say(player, "Command available only ingame");
-            return true;
-        }
-
-        if (args.length < 1) {
-            say(player, "Usage: " + Commands.COMMAND_SETBLOCKCOMMAND + " <name>");
-            return true;
-        }
-
-        CommandBlock cb = getComandBlock(player);
-        if (cb == null) {
-            say(player, "You need to look at a command block");
-            return true;
-        }
-
-        HashSet<String> allowed = ConfigProvider.getAllowedCommand();
-        String cmd = args[0].toLowerCase();
-        if (cmd.startsWith("/")) {
-            cmd = cmd.substring(1);
-        }
-
-        if (!allowed.contains(cmd) && !player.isOp()) {
-            say(player, ChatColor.RED + "Command " + ChatColor.WHITE + cmd + ChatColor.RED + " not allowed.");
-            return true;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (String s : args) {
-            sb.append(s);
-            sb.append(" ");
-        }
-
-        cmd = sb.toString().trim();
-        cb.setCommand(cmd);
-        cb.update(true, true);
-        say(player, ChatColor.BLUE + "New command: " + ChatColor.WHITE + cmd);
-        return true;
-    }
-
-    private boolean doGetCommand(Player player) {
-        if (player == null) {
-            say(player, "Command available only ingame");
-            return true;
-        }
-
-        CommandBlock cb = getComandBlock(player);
-        if (cb == null) {
-            say(player, "You need to look at a command block");
-            return true;
-        }
-
-        say(player, ChatColor.BLUE + "Block command: " + ChatColor.WHITE + cb.getCommand());
-
-        return true;
-    }
-
-    private void doTestCommand(Player player) {
-        if (player == null) {
-            say(player, "Command available only ingame");
-        }
-
-        
     }
 }

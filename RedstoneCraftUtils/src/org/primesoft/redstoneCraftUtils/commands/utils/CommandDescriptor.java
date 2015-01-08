@@ -50,17 +50,24 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils;
+
+package org.primesoft.redstoneCraftUtils.commands.utils;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  *
  * @author SBPrime
  */
-public final class Commands {    
-    public final static String COMMAND_GETBLOCKNAME = "getBlockName";
-    public final static String COMMAND_SETBLOCKNAME = "setBlockName";
-    public final static String COMMAND_GETBLOCKCOMMAND = "getBlockCommand";
-    public final static String COMMAND_SETBLOCKCOMMAND = "setBlockCommand";
-    public final static String COMMAND_RELOADCOMMAND = "reloadcb";
-    public final static String COMMAND_TESTCOMMAND = "test";
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface CommandDescriptor {
+    String command() default "";
+    String description() default "";
+    String permission() default "";
+    String usage() default "";
+    String[] aliases();
 }

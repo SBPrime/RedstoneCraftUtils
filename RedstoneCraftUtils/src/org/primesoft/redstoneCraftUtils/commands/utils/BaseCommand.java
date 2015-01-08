@@ -50,92 +50,28 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils.commands;
+package org.primesoft.redstoneCraftUtils.commands.utils;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import org.bukkit.Bukkit;
+import java.util.ArrayList;
+import java.util.List;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandMap;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.SimplePluginManager;
-import org.primesoft.redstoneCraftUtils.utils.Reflection;
+import org.bukkit.command.TabCompleter;
 
 /**
  *
  * @author SBPrime
  */
-public class CommandManager {
+public class BaseCommand implements CommandExecutor, TabCompleter {
 
-    /**
-     * Instance of the plugin
-     */
-    private final Plugin m_plugin;
-
-    /**
-     * The command map
-     */
-    private final CommandMap m_commandMap;
-    
-    
-    /**
-     * The plugin command creator
-     */
-    private final Constructor<?> m_commandCtor;
-
-    public CommandManager(Plugin plugin) {
-        m_plugin = plugin;
-
-        PluginManager pm = Bukkit.getPluginManager();
-        if (pm instanceof SimplePluginManager) {
-            m_commandMap = Reflection.get(SimplePluginManager.class, CommandMap.class, 
-                    pm, "commandMap", "Unable to get the commandMap");
-        } else {
-            m_commandMap = null;
-        }
-
-        m_commandCtor = Reflection.findConstructor(PluginCommand.class, 
-                "Unable to get the pluginCommand constructor", String.class, Plugin.class);
+    @Override
+    public boolean onCommand(CommandSender cs, Command cmnd, String name, String[] args) {
+        return true;
     }
 
-    /**
-     * initialise commands
-     *
-     * @param cls
-     */
-    public void initializeCommands(Class<?> cls) {
-        Method[] methods = cls.getMethods();
-        for (Method method : methods) {
-            if (method.isAnnotationPresent(CommandDescriptor.class)) {
-                installCommand(method, method.getAnnotation(CommandDescriptor.class));
-            }
-        }
-    }
-
-    private void installCommand(Method method, CommandDescriptor cd) {
-        if (m_commandCtor == null || m_commandMap == null) {
-            return;
-        }
-        
-        PluginCommand command = Reflection.create(PluginCommand.class, m_commandCtor, 
-                "Unable to create command", cd.command(), m_plugin);
-        String[] aliases = cd.aliases();
-        if (aliases != null && aliases.length > 0) {
-            command.setAliases(Arrays.asList(aliases));
-        }
-        
-        CommandWrapper cdWrapper = new CommandWrapper(method, command);
-        command.setDescription(cd.description());
-        command.setExecutor(cdWrapper);
-        command.setPermission(cd.permission());
-        command.setTabCompleter(cdWrapper);
-        command.setUsage(cd.usage());
-        
-        m_commandMap.register(m_plugin.getDescription().getName(), command);
+    @Override
+    public List<String> onTabComplete(CommandSender cs, Command cmnd, String name, String[] args) {
+        return new ArrayList<String>();
     }
 }

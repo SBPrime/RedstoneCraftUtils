@@ -50,21 +50,49 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.primesoft.redstoneCraftUtils.commands;
 
+import org.primesoft.redstoneCraftUtils.commands.utils.CommandDescriptor;
+import java.util.HashSet;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.CommandBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.primesoft.redstoneCraftUtils.ConfigProvider;
 import org.primesoft.redstoneCraftUtils.RCUtilsMain;
-import static org.primesoft.redstoneCraftUtils.RCUtilsMain.say;
 
 /**
  *
  * @author SBPrime
  */
 public class CommandBlockCommands {
+
+    private static void say(Player p, String msg) {
+        RCUtilsMain.say(p, msg);
+    }
+
+    /**
+     * Get the block that the player is looking at
+     *
+     * @param player
+     * @return
+     */
+    private static CommandBlock getComandBlock(Player player) {
+        Block b = player.getTargetBlock(null, 200);
+        if (b == null) {
+            return null;
+        }
+        BlockState bs = b.getState();
+        if (bs == null || !(bs instanceof CommandBlock)) {
+            return null;
+        }
+
+        return (CommandBlock) bs;
+    }
+
     @CommandDescriptor(
             command = "commandBlockGet",
             aliases = {"cbget"},
@@ -72,15 +100,144 @@ public class CommandBlockCommands {
             permission = "RCUtils.CommandBlock.GetBlock",
             description = "Get command block"
     )
-    public static boolean commandBlockGet(Player player, String[] args) 
-    {
-        if (player == null) {
-            RCUtilsMain.say(player, "Command available only ingame");
-            return true;
+    public static boolean commandBlockGet(Player player) {
+        if (!ConfigProvider.isCbEnabled()) {
+            return false;
         }
 
         final ItemStack is = new ItemStack(Material.COMMAND, 64);
         player.setItemInHand(is);
         return true;
     }
+
+    @CommandDescriptor(
+            command = "commandBlockGetName",
+            aliases = {"cbgetname"},
+            usage = "/<command>",
+            description = "Get command block name",
+            permission = "RCUtils.CommandBlock.GetName"
+    )
+    public static boolean commandBlockGetName(Player player) {
+        if (!ConfigProvider.isCbEnabled()) {
+            return false;
+        }
+
+        CommandBlock cb = getComandBlock(player);
+        if (cb == null) {
+            say(player, "You need to look at a command block");
+            return true;
+        }
+
+        say(player, ChatColor.BLUE + "Block name: " + ChatColor.WHITE + cb.getName());
+
+        return true;
+    }
+
+    @CommandDescriptor(
+            command = "commandBlockSetName",
+            aliases = {"cbsetname"},
+            usage = "/<command> [name]",
+            description = "Set command block name",
+            permission = "RCUtils.CommandBlock.SetName"
+    )
+    public static boolean commandBlockSetName(Player player, String[] args) {
+        if (!ConfigProvider.isCbEnabled()) {
+            return false;
+        }
+
+        if (args.length < 1) {
+            say(player, "Usage: commandBlockSetName <name>");
+            return true;
+        }
+
+        CommandBlock cb = getComandBlock(player);
+        if (cb == null) {
+            say(player, "You need to look at a command block");
+            return true;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (String s : args) {
+            sb.append(s);
+            sb.append(" ");
+        }
+
+        String name = sb.toString().trim();
+        cb.setName(name);
+        cb.update(true, true);
+        say(player, ChatColor.BLUE + "New name: " + ChatColor.WHITE + name);
+
+        return true;
+    }
+
+    @CommandDescriptor(
+            command = "commandBlockGetCommand",
+            aliases = {"cbgetcommand"},
+            usage = "/<command>",
+            description = "Get command block command",
+            permission = "RCUtils.CommandBlock.GetCommand"
+    )
+    public static boolean commandBlockGetCommand(Player player) {
+        if (!ConfigProvider.isCbEnabled()) {
+            return false;
+        }
+
+        CommandBlock cb = getComandBlock(player);
+        if (cb == null) {
+            say(player, "You need to look at a command block");
+            return true;
+        }
+
+        say(player, ChatColor.BLUE + "Block command: " + ChatColor.WHITE + cb.getCommand());
+
+        return true;
+    }
+
+    @CommandDescriptor(
+            command = "commandBlockSetCommand",
+            aliases = "cbsetcommand",
+            usage = "/<command> [newCommand]",
+            description = "Set command block command",
+            permission = "RCUtils.CommandBlock.SetCommand"
+    )
+    public static boolean commandBlockSetCommand(Player player, String[] args) {
+        if (!ConfigProvider.isCbEnabled()) {
+            return false;
+        }
+
+        if (args.length < 1) {
+            say(player, "Usage: commandBlockSetCommand <name>");
+            return true;
+        }
+
+        CommandBlock cb = getComandBlock(player);
+        if (cb == null) {
+            say(player, "You need to look at a command block");
+            return true;
+        }
+
+        HashSet<String> allowed = ConfigProvider.getCbAllowedCommands();
+        String cmd = args[0].toLowerCase();
+        if (cmd.startsWith("/")) {
+            cmd = cmd.substring(1);
+        }
+
+        if (!allowed.contains(cmd) && !player.isOp()) {
+            say(player, ChatColor.RED + "Command " + ChatColor.WHITE + cmd + ChatColor.RED + " not allowed.");
+            return true;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (String s : args) {
+            sb.append(s);
+            sb.append(" ");
+        }
+
+        cmd = sb.toString().trim();
+        cb.setCommand(cmd);
+        cb.update(true, true);
+        say(player, ChatColor.BLUE + "New command: " + ChatColor.WHITE + cmd);
+        return true;
+    }
+
 }

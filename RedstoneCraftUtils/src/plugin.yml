@@ -6,32 +6,6 @@ description: Util commands required by my server
 authors: [SBPrime]
 depend: []
 softdepend: []
-commands:  
-  commandBlockGetName:
-    description: 'Get command block name'
-    permission: RCUtils.CommandBlock.GetName
-    usage: /<command>
-    aliases: cbgetname
-  commandBlockSetName:
-    description: 'Set command block name'
-    permission: RCUtils.CommandBlock.SetName
-    usage: /<command>
-    aliases: cbsetname
-  commandBlockGetCommand:
-    description: 'Get command block command'
-    permission: RCUtils.CommandBlock.GetCommand
-    usage: /<command>
-    aliases: cbgetcommand
-  commandBlockSetCommand:
-    description: 'Set command block command'
-    permission: RCUtils.CommandBlock.SetCommand
-    usage: /<command>
-    aliases: cbsetcommand
-  rcreload:
-    description: 'Reload the redstone craft utils configuration'
-    permission: RCUtils.Reload
-    usage: /<command>
-    aliases: 
 permissions:
   RCUtils.*:
     description: Grants access to all RedstoneCraftUtils commands permissions

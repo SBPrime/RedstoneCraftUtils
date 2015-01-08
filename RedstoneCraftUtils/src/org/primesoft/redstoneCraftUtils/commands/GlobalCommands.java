@@ -52,26 +52,41 @@
  */
 package org.primesoft.redstoneCraftUtils.commands;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.primesoft.redstoneCraftUtils.ConfigProvider;
+import org.primesoft.redstoneCraftUtils.RCUtilsMain;
+import static org.primesoft.redstoneCraftUtils.RCUtilsMain.log;
+import static org.primesoft.redstoneCraftUtils.RCUtilsMain.say;
+import org.primesoft.redstoneCraftUtils.commands.utils.CommandDescriptor;
 
 /**
  *
  * @author SBPrime
  */
-public class BaseCommand implements CommandExecutor, TabCompleter {
+public class GlobalCommands {
 
-    @Override
-    public boolean onCommand(CommandSender cs, Command cmnd, String name, String[] args) {
-        return true;
+    private static void say(Player p, String msg) {
+        RCUtilsMain.say(p, msg);
     }
 
-    @Override
-    public List<String> onTabComplete(CommandSender cs, Command cmnd, String name, String[] args) {
-        return new ArrayList<String>();
+    @CommandDescriptor(
+            command = "rcreload",
+            aliases = {},
+            usage = "/<command>",
+            description = "Reload the redstone craft utils configuration",
+            permission = "RCUtils.Reload"        
+    )
+    public static void doReloadConfig(JavaPlugin plugin, Player player) {
+        log(player != null ? player.getName() : "console " + " reloading config...");
+
+        plugin.reloadConfig();
+
+        if (!ConfigProvider.load(plugin)) {
+            say(player, "Error loading config");
+            return;
+        }
+
+        say(player, "Config reloaded");
     }
 }

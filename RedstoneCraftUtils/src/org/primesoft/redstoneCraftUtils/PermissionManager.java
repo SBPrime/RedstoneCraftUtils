@@ -63,12 +63,6 @@ public class PermissionManager {
     * List of all permissions
     */
     public enum Perms {
-        GetCommandBlock,
-        SetName,
-        GetName,
-        SetCommand,
-        GetCommand,
-        Reload
     }
     
     
@@ -106,18 +100,6 @@ public class PermissionManager {
     @SuppressWarnings("incomplete-switch")
 	private static String getPermString(Perms perms) {
         switch (perms) {
-            case GetCommandBlock:
-                return s_prefix + "getCommandblock";
-            case GetCommand:
-                return s_prefix + "getCommand";
-            case GetName:
-                return s_prefix + "getCommandName";
-            case SetCommand:
-                return s_prefix + "setCommand";
-            case SetName:
-                return s_prefix + "setCommandName";
-            case Reload:
-                return s_prefix + "reload";
         }
 
         return null;

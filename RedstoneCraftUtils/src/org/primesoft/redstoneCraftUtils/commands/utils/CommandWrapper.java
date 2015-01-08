@@ -50,12 +50,14 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils.commands;
+package org.primesoft.redstoneCraftUtils.commands.utils;
 
 import java.lang.reflect.Method;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.primesoft.redstoneCraftUtils.RCUtilsMain;
 import org.primesoft.redstoneCraftUtils.utils.Reflection;
 
 /**
@@ -63,18 +65,82 @@ import org.primesoft.redstoneCraftUtils.utils.Reflection;
  * @author SBPrime
  */
 public class CommandWrapper extends BaseCommand {
+
+    private static final Object[] s_objectArray = new Object[0];
+
     private final Command m_command;
     private final Method m_method;
+    private final JavaPlugin m_plugin;
     
-    public CommandWrapper(Method method, Command command) {
+    private final int m_argCount;
+    private final int m_inGamePos;
+    private final int m_argsPos;
+    private final int m_pluginPos;
+
+    public CommandWrapper(JavaPlugin plugin, Method method, Command command) {
         m_command = command;
         m_method = method;
+        m_plugin = plugin;
+
+        Class<?>[] params = method.getParameterTypes();
+
+        int inGamePos = -1;
+        int argsPos = -1;
+        int pluginPos = -1;
+
+        if (params != null && params.length > 0) {
+            m_argCount = params.length;
+            for (int idx = 0; idx < params.length; idx++) {
+                Class<?> cls = params[idx];
+                if (cls.isAssignableFrom(Player.class)) {
+                    inGamePos = idx;
+                } else if (cls.isAssignableFrom(s_objectArray.getClass())) {
+                    argsPos = idx;
+                } else if (cls.isAssignableFrom(JavaPlugin.class)) {
+                    pluginPos = idx;
+                }
+            }
+        } else {
+            m_argCount = 0;
+        }
+
+        m_inGamePos = inGamePos;
+        m_argsPos = argsPos;
+        m_pluginPos = pluginPos;
     }
 
     @Override
     public boolean onCommand(CommandSender cs, Command cmnd, String name, String[] args) {
-        return Reflection.invoke(name, boolean.class, m_method, 
-                "Unable to invoke command", 
-                (Player)((cs instanceof Player) ? (Player)cs : null), args);        
+        String perm = m_command.getPermission();
+        Player player = (Player) ((cs instanceof Player) ? (Player) cs : null);
+        Object[] argList = new Object[m_argCount];
+
+        if (m_inGamePos >= 0) {
+            if (player == null) {
+                RCUtilsMain.say(null, "Command available only ingame");
+                return true;
+            }
+            
+            argList[m_inGamePos] = player;
+        }
+        
+        if (m_argsPos >= 0) {
+            if (args == null) {
+                return false;
+            }
+            
+            argList[m_argsPos] = args;
+        }
+        
+        if (m_pluginPos >= 0) {
+            argList[m_argsPos] = m_plugin;
+        }
+
+        if (perm == null || perm.isEmpty() || cs.isOp() || cs.hasPermission(perm)) {
+            return Reflection.invoke(name, boolean.class, m_method,
+                    "Unable to invoke command", argList);
+        }
+
+        return false;
     }
 }

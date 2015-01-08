@@ -53,11 +53,11 @@
  */
 package org.primesoft.redstoneCraftUtils;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.plugin.java.JavaPlugin;
 
 
 /**
@@ -66,10 +66,15 @@ import org.bukkit.configuration.ConfigurationSection;
  * @author SBPrime
  */
 public class ConfigProvider {    
-    private final static HashSet<String> m_allowedCommands = new HashSet();    
+    private final static HashSet<String> m_cbAllowedCommands = new HashSet(); 
+    private static boolean m_cdEnabled;
 
-    public static HashSet<String> getAllowedCommand() {
-        return m_allowedCommands;
+    public static HashSet<String> getCbAllowedCommands() {
+        return m_cbAllowedCommands;
+    }
+    
+    public static boolean isCbEnabled() {
+        return m_cdEnabled;
     }
 
     /**
@@ -78,7 +83,7 @@ public class ConfigProvider {
      * @param plugin parent plugin
      * @return true if config loaded
      */
-    public static boolean load(RCUtilsMain plugin) {
+    public static boolean load(JavaPlugin plugin) {
         if (plugin == null) {
             return false;
         }
@@ -91,17 +96,23 @@ public class ConfigProvider {
             return false;
         }
                 
-        final List<String> allowedCommands = mainSection.getStringList("AllowedCommands");
-        m_allowedCommands.clear();        
+        parseCommabdBlocks(mainSection.getConfigurationSection("commandBlocks"));
+        
+        return true;
+    }
+
+    private static void parseCommabdBlocks(ConfigurationSection configurationSection) {
+        m_cdEnabled = configurationSection.getBoolean("isEnabled", false);
+        
+        final List<String> allowedCommands = configurationSection.getStringList("AllowedCommands");
+        m_cbAllowedCommands.clear();        
         
         for (String s : allowedCommands)
         {
             s = s.toLowerCase();
-            if (!m_allowedCommands.contains(s)) {
-                m_allowedCommands.add(s);
+            if (!m_cbAllowedCommands.contains(s)) {
+                m_cbAllowedCommands.add(s);
             }
         }
-        
-        return true;
     }
 }
