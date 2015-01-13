@@ -1,4 +1,4 @@
-/*
+/*v
  * RedstoneCraftUtils a custom plugin for the RedstoneCraft server.
  * Copyright (c) 2015, SBPrime <https://github.com/SBPrime/>
  * Copyright (c) RedstoneCraftUtils contributors
@@ -53,12 +53,12 @@
 package org.primesoft.redstoneCraftUtils.commands;
 
 import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
 import org.primesoft.redstoneCraftUtils.RCUtilsMain;
 import static org.primesoft.redstoneCraftUtils.RCUtilsMain.log;
-import static org.primesoft.redstoneCraftUtils.RCUtilsMain.say;
 import org.primesoft.redstoneCraftUtils.commands.utils.CommandDescriptor;
 
 /**
@@ -70,37 +70,44 @@ public class GlobalCommands {
     private static void say(Player p, String msg) {
         RCUtilsMain.say(p, msg);
     }
-    
-    
 
     @CommandDescriptor(
             command = "rcreload",
             aliases = {},
             usage = "/<command>",
             description = "Reload the redstone craft utils configuration",
-            permission = "RCUtils.Reload"        
+            permission = "RCUtils.Reload"
     )
-    public static void reloadConfig(JavaPlugin plugin, Player player) {
+    public static boolean reloadConfig(JavaPlugin plugin, CommandSender cs) {
+        Player player = cs instanceof Player ? (Player) cs : null;
         log(player != null ? player.getName() : "console " + " reloading config...");
 
         plugin.reloadConfig();
 
         if (!ConfigProvider.load(plugin)) {
             say(player, "Error loading config");
-            return;
+            return false;
         }
 
         say(player, "Config reloaded");
+        return true;
     }
-    
-    
-    public static void spawn(JavaPlugin plugin, Player player) {
+
+    @CommandDescriptor(
+            command = "spawn",
+            aliases = {},
+            usage = "/<command>",
+            description = "Teleport to spawn",
+            permission = "RCUtils.spawn"
+    )
+    public static boolean spawn(JavaPlugin plugin, Player player) {
         Location spawn = ConfigProvider.getTeleportConfig().getSpawn();
-        
+
         if (spawn == null) {
-            return;
+            return false;
         }
-        
+
         player.teleport(spawn);
+        return true;
     }
 }

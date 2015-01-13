@@ -77,4 +77,47 @@ public class IntUtils {
             return false;
         }
     }
+    
+    
+    /**
+     * Try to parse a string
+     *
+     * @param s
+     * @param result
+     * @return
+     */
+    public static boolean tryParseDouble(String s, InOutParam<Double> result) {
+        if (s == null || result == null) {
+            return false;
+        }
+
+        try {
+            result.setValue(Double.parseDouble(s));
+
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Try to parse a string
+     *
+     * @param s
+     * @param result
+     * @return
+     */
+    public static boolean tryParseFloat(String s, InOutParam<Float> result) {
+        if (s == null || result == null) {
+            return false;
+        }
+
+        try {
+            result.setValue(Float.parseFloat(s));
+
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 }

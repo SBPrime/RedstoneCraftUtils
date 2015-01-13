@@ -71,11 +71,12 @@ public class CommandWrapper extends BaseCommand {
     private final Command m_command;
     private final Method m_method;
     private final JavaPlugin m_plugin;
-    
+
     private final int m_argCount;
     private final int m_inGamePos;
     private final int m_argsPos;
     private final int m_pluginPos;
+    private final int m_cmdSenderPos;
 
     public CommandWrapper(JavaPlugin plugin, Method method, Command command) {
         m_command = command;
@@ -87,12 +88,15 @@ public class CommandWrapper extends BaseCommand {
         int inGamePos = -1;
         int argsPos = -1;
         int pluginPos = -1;
+        int cmdSenderPos = -1;
 
         if (params != null && params.length > 0) {
             m_argCount = params.length;
             for (int idx = 0; idx < params.length; idx++) {
                 Class<?> cls = params[idx];
-                if (cls.isAssignableFrom(Player.class)) {
+                if (cls.isAssignableFrom(CommandSender.class)) {
+                    cmdSenderPos = idx;
+                } else if (cls.isAssignableFrom(Player.class)) {
                     inGamePos = idx;
                 } else if (cls.isAssignableFrom(s_objectArray.getClass())) {
                     argsPos = idx;
@@ -107,6 +111,7 @@ public class CommandWrapper extends BaseCommand {
         m_inGamePos = inGamePos;
         m_argsPos = argsPos;
         m_pluginPos = pluginPos;
+        m_cmdSenderPos = cmdSenderPos;
     }
 
     @Override
@@ -120,24 +125,26 @@ public class CommandWrapper extends BaseCommand {
                 RCUtilsMain.say(null, "Command available only ingame");
                 return true;
             }
-            
+
             argList[m_inGamePos] = player;
+        } else if (m_cmdSenderPos >= 0) {
+            argList[m_cmdSenderPos] = cs;
         }
-        
+
         if (m_argsPos >= 0) {
             if (args == null) {
                 return false;
             }
-            
+
             argList[m_argsPos] = args;
         }
-        
+
         if (m_pluginPos >= 0) {
-            argList[m_argsPos] = m_plugin;
+            argList[m_pluginPos] = m_plugin;
         }
 
         if (perm == null || perm.isEmpty() || cs.isOp() || cs.hasPermission(perm)) {
-            return Reflection.invoke(name, boolean.class, m_method,
+            return Reflection.invoke(name, Boolean.class, m_method,
                     "Unable to invoke command", argList);
         }
 

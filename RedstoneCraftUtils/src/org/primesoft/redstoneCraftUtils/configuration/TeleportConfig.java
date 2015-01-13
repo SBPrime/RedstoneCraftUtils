@@ -104,17 +104,17 @@ public class TeleportConfig {
             return null;
         }
 
-        InOutParam<Integer> x = InOutParam.Out();
-        InOutParam<Integer> y = InOutParam.Out();
-        InOutParam<Integer> z = InOutParam.Out();
-        InOutParam<Integer> yaw = InOutParam.Out();
-        InOutParam<Integer> pitch = InOutParam.Out();
+        InOutParam<Double> x = InOutParam.Out();
+        InOutParam<Double> y = InOutParam.Out();
+        InOutParam<Double> z = InOutParam.Out();
+        InOutParam<Float> yaw = InOutParam.Out();
+        InOutParam<Float> pitch = InOutParam.Out();
 
-        if (!IntUtils.tryParseInteger(parts[1], x)
-        || !IntUtils.tryParseInteger(parts[2], y)
-        || !IntUtils.tryParseInteger(parts[3], z)
-        || !IntUtils.tryParseInteger(parts[4], yaw)
-        || !IntUtils.tryParseInteger(parts[5], pitch)) {
+        if (!IntUtils.tryParseDouble(parts[1], x)
+        || !IntUtils.tryParseDouble(parts[2], y)
+        || !IntUtils.tryParseDouble(parts[3], z)
+        || !IntUtils.tryParseFloat(parts[4], yaw)
+        || !IntUtils.tryParseFloat(parts[5], pitch)) {
             return null;
         }
 
@@ -123,7 +123,7 @@ public class TeleportConfig {
             return null;
         }
 
-        return new Location(w, x.getValue(), y.getValue(), z.getValue(), yaw.getValue(), pitch.getValue());
+        return new Location(w, x.getValue(), y.getValue(), z.getValue(), (float)yaw.getValue(), (float)pitch.getValue());
     }
 
     private final Location m_spawn;

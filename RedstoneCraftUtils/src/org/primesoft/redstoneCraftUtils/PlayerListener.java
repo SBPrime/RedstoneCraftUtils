@@ -84,7 +84,7 @@ public class PlayerListener implements Listener {
             public void run() {
                 player.teleport(location);
             }
-        }, 10);
+        }, 3);
     }
 
     @EventHandler
