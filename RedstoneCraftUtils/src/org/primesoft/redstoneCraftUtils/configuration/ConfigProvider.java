@@ -38,6 +38,7 @@
  *     * no donations system in place
  * 11. If you want to use this plugin on a server that brings you money contact
  *     the plugin author for sublicense.
+
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -50,61 +51,99 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils;
+package org.primesoft.redstoneCraftUtils.configuration;
 
-import java.util.HashSet;
+import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.plugin.java.JavaPlugin;
+
 
 /**
+ * This class contains configuration
  *
  * @author SBPrime
  */
-public class AutoStopConfig {
-        /**
-     * The default configuration
+public class ConfigProvider {        
+    /**
+     * The command block configuration
      */
-    private final static AutoStopConfig m_default = new AutoStopConfig(false, -1);
+    private static CommandBlockConfig m_cbConfig = CommandBlockConfig.parse(null);
+    
+    /**
+     * The auto stop configuration
+     */
+    private static AutoStopConfig m_autoStopConfig = AutoStopConfig.parse(null);
+    
+    /**
+     * The teleport configuration
+     */
+    private static TeleportConfig m_teleportConfig = TeleportConfig.parse(null, null);
     
     
     /**
-     * parse the configuration section
-     * @param section
+     * The startup shell commands
+     */
+    private static String[] m_startup = new String[0];
+    
+    
+    /**
+     * The commandblock configuration
      * @return 
      */
-    public static AutoStopConfig parse(ConfigurationSection section) {
-        if (section == null) {
-            return m_default;
-        }
+    public static CommandBlockConfig getCommandBlockConfig() {
+        return m_cbConfig;
+    }
+    
+    /**
+     * The teleport configuration
+     * @return 
+     */
+    public static TeleportConfig getTeleportConfig() {
+        return m_teleportConfig;
+    }
         
-        return new AutoStopConfig(
-                section.getBoolean("isEnabled", false),
-                section.getInt("time", 120)
-        );
+    /**
+     * The auto stop configuration
+     * @return 
+     */
+    public static AutoStopConfig getAutoStopConfig() {
+        return m_autoStopConfig;
     }
     
-    private final int m_checkTime; 
-    private final boolean m_isEnabled;
+    
+    /**
+     * The startup shell commands
+     * @return 
+     */
+    public static String[] getStartup() {
+        return m_startup;
+    }
+    
+    /**
+     * Load configuration
+     *
+     * @param plugin parent plugin
+     * @return true if config loaded
+     */
+    public static boolean load(JavaPlugin plugin) {
+        if (plugin == null) {
+            return false;
+        }
 
-    
-    /**
-     * Is commandblock enabled
-     * @return 
-     */
-    public boolean isEnabled() {
-        return m_isEnabled;
-    }
-    
-    
-    /**
-     * Auto stop check time
-     * @return 
-     */
-    public int checkTime() {
-        return m_checkTime;
-    }
-    
-    private AutoStopConfig(boolean isEnabled, int time) {
-        m_isEnabled = isEnabled && time > 0;
-        m_checkTime = time;
+        plugin.saveDefaultConfig();        
+
+        Configuration config = plugin.getConfig();
+        ConfigurationSection mainSection = config.getConfigurationSection("RCUtils");
+        if (mainSection == null) {
+            return false;
+        }
+
+        m_cbConfig = CommandBlockConfig.parse(mainSection.getConfigurationSection("commandBlocks"));
+        m_autoStopConfig = AutoStopConfig.parse(mainSection.getConfigurationSection("autoStop"));
+        m_teleportConfig = TeleportConfig.parse(plugin.getServer(), mainSection.getConfigurationSection("teleport"));
+        
+        m_startup = mainSection.getStringList("startup").toArray(new String[0]);
+        
+        return true;
     }
 }

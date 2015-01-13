@@ -2,6 +2,11 @@ RCUtils:
   autoStop:
     isEnabled: true
     time: 120
+  teleport:
+    spawn: world#0#0#0#0#0
+    join: world#0#0#0#0#0
+    death: world#0#0#0#0#0
+  startup: []
   commandBlocks:
     isEnabled: true
     allowedCommands:

@@ -52,9 +52,10 @@
  */
 package org.primesoft.redstoneCraftUtils.commands;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.primesoft.redstoneCraftUtils.ConfigProvider;
+import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
 import org.primesoft.redstoneCraftUtils.RCUtilsMain;
 import static org.primesoft.redstoneCraftUtils.RCUtilsMain.log;
 import static org.primesoft.redstoneCraftUtils.RCUtilsMain.say;
@@ -69,6 +70,8 @@ public class GlobalCommands {
     private static void say(Player p, String msg) {
         RCUtilsMain.say(p, msg);
     }
+    
+    
 
     @CommandDescriptor(
             command = "rcreload",
@@ -77,7 +80,7 @@ public class GlobalCommands {
             description = "Reload the redstone craft utils configuration",
             permission = "RCUtils.Reload"        
     )
-    public static void doReloadConfig(JavaPlugin plugin, Player player) {
+    public static void reloadConfig(JavaPlugin plugin, Player player) {
         log(player != null ? player.getName() : "console " + " reloading config...");
 
         plugin.reloadConfig();
@@ -88,5 +91,16 @@ public class GlobalCommands {
         }
 
         say(player, "Config reloaded");
+    }
+    
+    
+    public static void spawn(JavaPlugin plugin, Player player) {
+        Location spawn = ConfigProvider.getTeleportConfig().getSpawn();
+        
+        if (spawn == null) {
+            return;
+        }
+        
+        player.teleport(spawn);
     }
 }

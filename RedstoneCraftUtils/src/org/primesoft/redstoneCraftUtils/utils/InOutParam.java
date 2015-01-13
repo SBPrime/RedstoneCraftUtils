@@ -50,99 +50,80 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils;
-
-import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.primesoft.redstoneCraftUtils.commands.CommandBlockCommands;
-import org.primesoft.redstoneCraftUtils.commands.GlobalCommands;
-import org.primesoft.redstoneCraftUtils.commands.utils.CommandManager;
-import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
+package org.primesoft.redstoneCraftUtils.utils;
 
 /**
- *
+ * This is a helper class that allows you to add output (and input) 
+ * parameters to java functions
  * @author SBPrime
  */
-public class RCUtilsMain extends JavaPlugin {
-
-    private static final Logger s_log = Logger.getLogger("Minecraft.AWE");
-
-    private static ConsoleCommandSender s_console;
-
-    private static String s_prefix = null;
-
-    private static final String s_logFormat = "%s %s";
-
-    private MetricsLite m_metrics;
-
-    private CommandManager m_commandManager;
-
-    private PlayerListener m_listener;
-
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
-            return;
-        }
-
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
+public class InOutParam<T> {       
+    /**
+     * Initialize reference parame (in and out value)
+     * @param <T>
+     * @param value
+     * @return 
+     */
+    public static <T> InOutParam<T> Ref(T value)
+    {
+        return new InOutParam<T>(value);
     }
-
-    public static void say(Player player, String msg) {
-        if (player == null) {
-            s_console.sendRawMessage(msg);
-        } else {
-            player.sendRawMessage(msg);
-        }
+    
+    /**
+     * Initialize output param (out only)
+     * @param <T>
+     * @return 
+     */
+    public static <T> InOutParam<T> Out() {
+        return new InOutParam<T>();
     }
-
-    @Override
-    public void onEnable() {
-        PluginDescriptionFile desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_console = getServer().getConsoleSender();
-
-        try {
-            m_metrics = new MetricsLite(this);
-            m_metrics.start();
-        } catch (IOException e) {
-            log("Error initializing MCStats: " + e.getMessage());
-        }
-
-        if (!ConfigProvider.load(this)) {
-            log("Error loading config");
-        }
-
-        m_commandManager = new CommandManager(this);
-        m_commandManager.initializeCommands(GlobalCommands.class);
-        m_commandManager.initializeCommands(CommandBlockCommands.class);
-
-        PluginManager pm = getServer().getPluginManager();
-        m_listener = new PlayerListener(this);
-        pm.registerEvents(m_listener, this);
-
-        Runtime rt = Runtime.getRuntime();
-        for (String cmd : ConfigProvider.getStartup()) {
-            try {
-                log("Executing: " + cmd);
-                Process pr = rt.exec(cmd);
-            } catch (IOException ex) {
-                log("Error executing startup command");
-            }
-        }
-
-        log("Enabled");
+    
+    /**
+     * Is the value set
+     */
+    private boolean m_isSet;
+    
+    /**
+     * The parameter value
+     */
+    private T m_value;
+    
+    
+    /**
+     * Create new instance of ref param
+     * @param value 
+     */
+    private InOutParam(T value)
+    {
+        m_value = value;
+        m_isSet = true;
     }
-
-    @Override
-    public void onDisable() {
-
-        log("Disabled");
+    
+    /**
+     * Create new instance of out param
+     */
+    private InOutParam(){
+        m_isSet = false;
+    }
+    
+    
+    /**
+     * Get the parameter value
+     * @return 
+     */
+    public T getValue()
+    {        
+        if (m_isSet) {
+            return m_value;
+        }
+        
+        throw new IllegalStateException("Output parameter not set");
+    }
+    
+    
+    public void setValue(T value)
+    {
+        m_isSet = true;
+        m_value = value;
     }
 }

@@ -61,7 +61,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.primesoft.redstoneCraftUtils.ConfigProvider;
+import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
 import org.primesoft.redstoneCraftUtils.RCUtilsMain;
 
 /**

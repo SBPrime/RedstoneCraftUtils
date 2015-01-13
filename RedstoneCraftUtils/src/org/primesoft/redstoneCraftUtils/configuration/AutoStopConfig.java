@@ -50,99 +50,61 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils;
+package org.primesoft.redstoneCraftUtils.configuration;
 
-import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.primesoft.redstoneCraftUtils.commands.CommandBlockCommands;
-import org.primesoft.redstoneCraftUtils.commands.GlobalCommands;
-import org.primesoft.redstoneCraftUtils.commands.utils.CommandManager;
-import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
+import java.util.HashSet;
+import org.bukkit.configuration.ConfigurationSection;
 
 /**
  *
  * @author SBPrime
  */
-public class RCUtilsMain extends JavaPlugin {
-
-    private static final Logger s_log = Logger.getLogger("Minecraft.AWE");
-
-    private static ConsoleCommandSender s_console;
-
-    private static String s_prefix = null;
-
-    private static final String s_logFormat = "%s %s";
-
-    private MetricsLite m_metrics;
-
-    private CommandManager m_commandManager;
-
-    private PlayerListener m_listener;
-
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
-            return;
+public class AutoStopConfig {
+        /**
+     * The default configuration
+     */
+    private final static AutoStopConfig m_default = new AutoStopConfig(false, -1);
+    
+    
+    /**
+     * parse the configuration section
+     * @param section
+     * @return 
+     */
+    public static AutoStopConfig parse(ConfigurationSection section) {
+        if (section == null) {
+            return m_default;
         }
-
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
+        
+        return new AutoStopConfig(
+                section.getBoolean("isEnabled", false),
+                section.getInt("time", 120)
+        );
     }
+    
+    private final int m_checkTime; 
+    private final boolean m_isEnabled;
 
-    public static void say(Player player, String msg) {
-        if (player == null) {
-            s_console.sendRawMessage(msg);
-        } else {
-            player.sendRawMessage(msg);
-        }
+    
+    /**
+     * Is commandblock enabled
+     * @return 
+     */
+    public boolean isEnabled() {
+        return m_isEnabled;
     }
-
-    @Override
-    public void onEnable() {
-        PluginDescriptionFile desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_console = getServer().getConsoleSender();
-
-        try {
-            m_metrics = new MetricsLite(this);
-            m_metrics.start();
-        } catch (IOException e) {
-            log("Error initializing MCStats: " + e.getMessage());
-        }
-
-        if (!ConfigProvider.load(this)) {
-            log("Error loading config");
-        }
-
-        m_commandManager = new CommandManager(this);
-        m_commandManager.initializeCommands(GlobalCommands.class);
-        m_commandManager.initializeCommands(CommandBlockCommands.class);
-
-        PluginManager pm = getServer().getPluginManager();
-        m_listener = new PlayerListener(this);
-        pm.registerEvents(m_listener, this);
-
-        Runtime rt = Runtime.getRuntime();
-        for (String cmd : ConfigProvider.getStartup()) {
-            try {
-                log("Executing: " + cmd);
-                Process pr = rt.exec(cmd);
-            } catch (IOException ex) {
-                log("Error executing startup command");
-            }
-        }
-
-        log("Enabled");
+    
+    
+    /**
+     * Auto stop check time
+     * @return 
+     */
+    public int checkTime() {
+        return m_checkTime;
     }
-
-    @Override
-    public void onDisable() {
-
-        log("Disabled");
+    
+    private AutoStopConfig(boolean isEnabled, int time) {
+        m_isEnabled = isEnabled && time > 0;
+        m_checkTime = time;
     }
 }

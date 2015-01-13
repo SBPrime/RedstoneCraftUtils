@@ -52,97 +52,62 @@
  */
 package org.primesoft.redstoneCraftUtils;
 
-import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.Location;
+import org.bukkit.Server;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.primesoft.redstoneCraftUtils.commands.CommandBlockCommands;
-import org.primesoft.redstoneCraftUtils.commands.GlobalCommands;
-import org.primesoft.redstoneCraftUtils.commands.utils.CommandManager;
-import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
+import org.bukkit.scheduler.BukkitScheduler;
+import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
 
 /**
  *
  * @author SBPrime
  */
-public class RCUtilsMain extends JavaPlugin {
+public class PlayerListener implements Listener {
 
-    private static final Logger s_log = Logger.getLogger("Minecraft.AWE");
+    private final BukkitScheduler m_scheduler;
+    private final JavaPlugin m_plugin;
 
-    private static ConsoleCommandSender s_console;
+    public PlayerListener(JavaPlugin plugin) {
+        m_plugin = plugin;
+        m_scheduler = plugin.getServer().getScheduler();
+    }
 
-    private static String s_prefix = null;
+    private void teleport(final Player player, final Location location) {
+        m_scheduler.runTaskLater(m_plugin, new Runnable() {
 
-    private static final String s_logFormat = "%s %s";
+            @Override
+            public void run() {
+                player.teleport(location);
+            }
+        }, 10);
+    }
 
-    private MetricsLite m_metrics;
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
 
-    private CommandManager m_commandManager;
-
-    private PlayerListener m_listener;
-
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
+        Location location = ConfigProvider.getTeleportConfig().getJoin();
+        if (location == null || player == null) {
             return;
         }
 
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
+        teleport(player, location);
     }
 
-    public static void say(Player player, String msg) {
-        if (player == null) {
-            s_console.sendRawMessage(msg);
-        } else {
-            player.sendRawMessage(msg);
-        }
-    }
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
 
-    @Override
-    public void onEnable() {
-        PluginDescriptionFile desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_console = getServer().getConsoleSender();
-
-        try {
-            m_metrics = new MetricsLite(this);
-            m_metrics.start();
-        } catch (IOException e) {
-            log("Error initializing MCStats: " + e.getMessage());
+        Location location = ConfigProvider.getTeleportConfig().getDeath();
+        if (location == null || player == null) {
+            return;
         }
 
-        if (!ConfigProvider.load(this)) {
-            log("Error loading config");
-        }
-
-        m_commandManager = new CommandManager(this);
-        m_commandManager.initializeCommands(GlobalCommands.class);
-        m_commandManager.initializeCommands(CommandBlockCommands.class);
-
-        PluginManager pm = getServer().getPluginManager();
-        m_listener = new PlayerListener(this);
-        pm.registerEvents(m_listener, this);
-
-        Runtime rt = Runtime.getRuntime();
-        for (String cmd : ConfigProvider.getStartup()) {
-            try {
-                log("Executing: " + cmd);
-                Process pr = rt.exec(cmd);
-            } catch (IOException ex) {
-                log("Error executing startup command");
-            }
-        }
-
-        log("Enabled");
-    }
-
-    @Override
-    public void onDisable() {
-
-        log("Disabled");
+        teleport(player, location);
     }
 }

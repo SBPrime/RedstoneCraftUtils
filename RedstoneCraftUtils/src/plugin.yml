@@ -1,4 +1,5 @@
 name: RedstoneCraftUtils
+load: STARTUP
 main: org.primesoft.redstoneCraftUtils.RCUtilsMain
 version: 0.2
 website: 
@@ -13,6 +14,9 @@ permissions:
     children:
       RCUtils.CommandBlock.*: true
       RCUtils.Reload: true
+  RCUtils.Spawn:
+    description: Grants access to spawn command
+    default: op
   RCUtils.Reload:
     description: Grants access to reload configuration command
     default: op

@@ -50,68 +50,31 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils;
-
-import java.util.HashSet;
-import org.bukkit.configuration.ConfigurationSection;
+package org.primesoft.redstoneCraftUtils.utils;
 
 /**
  *
  * @author SBPrime
  */
-public class CommandBlockConfig {
+public class IntUtils {
     /**
-     * The default command block configuration
+     * Try to parse a string
+     *
+     * @param s
+     * @param result
+     * @return
      */
-    private final static CommandBlockConfig m_default = new CommandBlockConfig(false, null);    
-    
-    
-    /**
-     * parse the configuration section
-     * @param section
-     * @return 
-     */
-    public static CommandBlockConfig parse(ConfigurationSection section) {
-        if (section == null) {
-            return m_default;
+    public static boolean tryParseInteger(String s, InOutParam<Integer> result) {
+        if (s == null || result == null) {
+            return false;
         }
-        
-        return new CommandBlockConfig(
-                section.getBoolean("isEnabled", false),
-                section.getStringList("allowedCommands")
-        );
-    }
-    
-    private final HashSet<String> m_allowedCommands = new HashSet(); 
-    private final boolean m_isEnabled;
 
-    /**
-     * Is the command allowed
-     * @param command
-     * @return 
-     */
-    public boolean isAllowed(String command) {
-        return command != null &&  m_allowedCommands.contains(command);
-    }
-    
-    /**
-     * Is commandblock enabled
-     * @return 
-     */
-    public boolean isEnabled() {
-        return m_isEnabled;
-    }
-    
-    
-    private CommandBlockConfig(boolean  isEnabled, Iterable<String> allowedCommands) {
-        m_isEnabled = isEnabled;
-        if (allowedCommands != null) {
-            for (String s : allowedCommands) {
-                s = s.toLowerCase();
-                if (!m_allowedCommands.contains(s)) {
-                    m_allowedCommands.add(s);
-                }
-            }
-        }                
+        try {
+            result.setValue(Integer.parseInt(s));
+
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

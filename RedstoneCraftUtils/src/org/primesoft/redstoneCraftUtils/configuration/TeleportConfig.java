@@ -50,99 +50,116 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.primesoft.redstoneCraftUtils;
+package org.primesoft.redstoneCraftUtils.configuration;
 
-import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.primesoft.redstoneCraftUtils.commands.CommandBlockCommands;
-import org.primesoft.redstoneCraftUtils.commands.GlobalCommands;
-import org.primesoft.redstoneCraftUtils.commands.utils.CommandManager;
-import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
+import org.bukkit.Location;
+import org.bukkit.Server;
+import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
+import org.primesoft.redstoneCraftUtils.utils.InOutParam;
+import org.primesoft.redstoneCraftUtils.utils.IntUtils;
 
 /**
  *
  * @author SBPrime
  */
-public class RCUtilsMain extends JavaPlugin {
+public class TeleportConfig {
 
-    private static final Logger s_log = Logger.getLogger("Minecraft.AWE");
+    /**
+     * The default teleport configuration
+     */
+    private final static TeleportConfig m_default = new TeleportConfig(null, null, null);
 
-    private static ConsoleCommandSender s_console;
-
-    private static String s_prefix = null;
-
-    private static final String s_logFormat = "%s %s";
-
-    private MetricsLite m_metrics;
-
-    private CommandManager m_commandManager;
-
-    private PlayerListener m_listener;
-
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
-            return;
+    /**
+     * parse the configuration section
+     *
+     * @param section
+     * @return
+     */
+    public static TeleportConfig parse(Server server, ConfigurationSection section) {
+        if (section == null || server == null) {
+            return m_default;
         }
 
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
+        Location spawn = parse(server, section.getString("spawn", ""));
+        Location join = parse(server, section.getString("join", ""));
+        Location death = parse(server, section.getString("death", ""));
+
+        return new TeleportConfig(spawn, join, death);
     }
 
-    public static void say(Player player, String msg) {
-        if (player == null) {
-            s_console.sendRawMessage(msg);
-        } else {
-            player.sendRawMessage(msg);
+    /**
+     * Try to parse the location string
+     *
+     * @param s
+     * @return
+     */
+    private static Location parse(Server server, String s) {
+        if (s == null || s.isEmpty()) {
+            return null;
         }
+
+        String[] parts = s.split("#");
+        if (parts == null || parts.length != 6) {
+            return null;
+        }
+
+        InOutParam<Integer> x = InOutParam.Out();
+        InOutParam<Integer> y = InOutParam.Out();
+        InOutParam<Integer> z = InOutParam.Out();
+        InOutParam<Integer> yaw = InOutParam.Out();
+        InOutParam<Integer> pitch = InOutParam.Out();
+
+        if (!IntUtils.tryParseInteger(parts[1], x)
+        || !IntUtils.tryParseInteger(parts[2], y)
+        || !IntUtils.tryParseInteger(parts[3], z)
+        || !IntUtils.tryParseInteger(parts[4], yaw)
+        || !IntUtils.tryParseInteger(parts[5], pitch)) {
+            return null;
+        }
+
+        World w = server.getWorld(parts[0]);
+        if (w == null) {
+            return null;
+        }
+
+        return new Location(w, x.getValue(), y.getValue(), z.getValue(), yaw.getValue(), pitch.getValue());
     }
 
-    @Override
-    public void onEnable() {
-        PluginDescriptionFile desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_console = getServer().getConsoleSender();
+    private final Location m_spawn;
+    private final Location m_join;
+    private final Location m_death;
 
-        try {
-            m_metrics = new MetricsLite(this);
-            m_metrics.start();
-        } catch (IOException e) {
-            log("Error initializing MCStats: " + e.getMessage());
-        }
-
-        if (!ConfigProvider.load(this)) {
-            log("Error loading config");
-        }
-
-        m_commandManager = new CommandManager(this);
-        m_commandManager.initializeCommands(GlobalCommands.class);
-        m_commandManager.initializeCommands(CommandBlockCommands.class);
-
-        PluginManager pm = getServer().getPluginManager();
-        m_listener = new PlayerListener(this);
-        pm.registerEvents(m_listener, this);
-
-        Runtime rt = Runtime.getRuntime();
-        for (String cmd : ConfigProvider.getStartup()) {
-            try {
-                log("Executing: " + cmd);
-                Process pr = rt.exec(cmd);
-            } catch (IOException ex) {
-                log("Error executing startup command");
-            }
-        }
-
-        log("Enabled");
+    /**
+     * The spawn
+     *
+     * @return
+     */
+    public Location getSpawn() {
+        return m_spawn;
     }
 
-    @Override
-    public void onDisable() {
+    /**
+     * Server join location
+     *
+     * @return
+     */
+    public Location getJoin() {
+        return m_join;
+    }
 
-        log("Disabled");
+    /**
+     * The death tp location
+     *
+     * @return
+     */
+    public Location getDeath() {
+        return m_death;
+    }
+
+    private TeleportConfig(Location spawn, Location join, Location death) {
+        m_spawn = spawn;
+        m_join = join;
+        m_death = death;
     }
 }
