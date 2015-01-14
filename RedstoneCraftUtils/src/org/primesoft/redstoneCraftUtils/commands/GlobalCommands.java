@@ -60,6 +60,7 @@ import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
 import org.primesoft.redstoneCraftUtils.RCUtilsMain;
 import static org.primesoft.redstoneCraftUtils.RCUtilsMain.log;
 import org.primesoft.redstoneCraftUtils.commands.utils.CommandDescriptor;
+import org.primesoft.redstoneCraftUtils.configuration.TeleportLocation;
 
 /**
  *
@@ -101,13 +102,13 @@ public class GlobalCommands {
             permission = "RCUtils.spawn"
     )
     public static boolean spawn(JavaPlugin plugin, Player player) {
-        Location spawn = ConfigProvider.getTeleportConfig().getSpawn();
+        TeleportLocation spawn = ConfigProvider.getTeleportConfig().getSpawn();
 
-        if (spawn == null) {
+        if (spawn == null || plugin == null || player == null) {
             return false;
         }
 
-        player.teleport(spawn);
+        spawn.teleport(player.getServer(), player);
         return true;
     }
 }

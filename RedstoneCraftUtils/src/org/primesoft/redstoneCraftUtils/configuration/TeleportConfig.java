@@ -52,9 +52,6 @@
  */
 package org.primesoft.redstoneCraftUtils.configuration;
 
-import org.bukkit.Location;
-import org.bukkit.Server;
-import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.primesoft.redstoneCraftUtils.utils.InOutParam;
 import org.primesoft.redstoneCraftUtils.utils.IntUtils;
@@ -73,17 +70,18 @@ public class TeleportConfig {
     /**
      * parse the configuration section
      *
+     * @param server
      * @param section
      * @return
      */
-    public static TeleportConfig parse(Server server, ConfigurationSection section) {
-        if (section == null || server == null) {
+    public static TeleportConfig parse(ConfigurationSection section) {
+        if (section == null) {
             return m_default;
         }
 
-        Location spawn = parse(server, section.getString("spawn", ""));
-        Location join = parse(server, section.getString("join", ""));
-        Location death = parse(server, section.getString("death", ""));
+        TeleportLocation spawn = parse(section.getString("spawn", ""));
+        TeleportLocation join = parse(section.getString("join", ""));
+        TeleportLocation death = parse(section.getString("death", ""));
 
         return new TeleportConfig(spawn, join, death);
     }
@@ -94,7 +92,7 @@ public class TeleportConfig {
      * @param s
      * @return
      */
-    private static Location parse(Server server, String s) {
+    private static TeleportLocation parse(String s) {
         if (s == null || s.isEmpty()) {
             return null;
         }
@@ -111,31 +109,28 @@ public class TeleportConfig {
         InOutParam<Float> pitch = InOutParam.Out();
 
         if (!IntUtils.tryParseDouble(parts[1], x)
-        || !IntUtils.tryParseDouble(parts[2], y)
-        || !IntUtils.tryParseDouble(parts[3], z)
-        || !IntUtils.tryParseFloat(parts[4], yaw)
-        || !IntUtils.tryParseFloat(parts[5], pitch)) {
+                || !IntUtils.tryParseDouble(parts[2], y)
+                || !IntUtils.tryParseDouble(parts[3], z)
+                || !IntUtils.tryParseFloat(parts[4], yaw)
+                || !IntUtils.tryParseFloat(parts[5], pitch)) {
             return null;
         }
 
-        World w = server.getWorld(parts[0]);
-        if (w == null) {
-            return null;
-        }
-
-        return new Location(w, x.getValue(), y.getValue(), z.getValue(), (float)yaw.getValue(), (float)pitch.getValue());
+        return new TeleportLocation(parts[0],
+                x.getValue(), y.getValue(), z.getValue(),
+                (float) yaw.getValue(), (float) pitch.getValue());
     }
 
-    private final Location m_spawn;
-    private final Location m_join;
-    private final Location m_death;
+    private final TeleportLocation m_spawn;
+    private final TeleportLocation m_join;
+    private final TeleportLocation m_death;
 
     /**
      * The spawn
      *
      * @return
      */
-    public Location getSpawn() {
+    public TeleportLocation getSpawn() {
         return m_spawn;
     }
 
@@ -144,7 +139,7 @@ public class TeleportConfig {
      *
      * @return
      */
-    public Location getJoin() {
+    public TeleportLocation getJoin() {
         return m_join;
     }
 
@@ -153,11 +148,11 @@ public class TeleportConfig {
      *
      * @return
      */
-    public Location getDeath() {
+    public TeleportLocation getDeath() {
         return m_death;
     }
 
-    private TeleportConfig(Location spawn, Location join, Location death) {
+    private TeleportConfig(TeleportLocation spawn, TeleportLocation join, TeleportLocation death) {
         m_spawn = spawn;
         m_join = join;
         m_death = death;

@@ -62,6 +62,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
+import org.primesoft.redstoneCraftUtils.configuration.TeleportLocation;
 
 /**
  *
@@ -91,23 +92,23 @@ public class PlayerListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        Location location = ConfigProvider.getTeleportConfig().getJoin();
+        TeleportLocation location = ConfigProvider.getTeleportConfig().getJoin();
         if (location == null || player == null) {
             return;
         }
 
-        teleport(player, location);
+        location.teleport(player.getServer(), player);
     }
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
 
-        Location location = ConfigProvider.getTeleportConfig().getDeath();
+        TeleportLocation location = ConfigProvider.getTeleportConfig().getDeath();
         if (location == null || player == null) {
             return;
         }
 
-        teleport(player, location);
+        location.teleport(player.getServer(), player);
     }
 }

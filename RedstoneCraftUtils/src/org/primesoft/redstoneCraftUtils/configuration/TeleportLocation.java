@@ -38,7 +38,6 @@
  *     * no donations system in place
  * 11. If you want to use this plugin on a server that brings you money contact
  *     the plugin author for sublicense.
-
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -53,97 +52,43 @@
  */
 package org.primesoft.redstoneCraftUtils.configuration;
 
-import org.bukkit.configuration.Configuration;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.plugin.java.JavaPlugin;
-
+import org.bukkit.Location;
+import org.bukkit.Server;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
 
 /**
- * This class contains configuration
  *
  * @author SBPrime
  */
-public class ConfigProvider {        
-    /**
-     * The command block configuration
-     */
-    private static CommandBlockConfig m_cbConfig = CommandBlockConfig.parse(null);
-    
-    /**
-     * The auto stop configuration
-     */
-    private static AutoStopConfig m_autoStopConfig = AutoStopConfig.parse(null);
-    
-    /**
-     * The teleport configuration
-     */
-    private static TeleportConfig m_teleportConfig = TeleportConfig.parse(null);
-    
-    
-    /**
-     * The startup shell commands
-     */
-    private static String[] m_startup = new String[0];
-    
-    
-    /**
-     * The commandblock configuration
-     * @return 
-     */
-    public static CommandBlockConfig getCommandBlockConfig() {
-        return m_cbConfig;
-    }
-    
-    /**
-     * The teleport configuration
-     * @return 
-     */
-    public static TeleportConfig getTeleportConfig() {
-        return m_teleportConfig;
-    }
-        
-    /**
-     * The auto stop configuration
-     * @return 
-     */
-    public static AutoStopConfig getAutoStopConfig() {
-        return m_autoStopConfig;
-    }
-    
-    
-    /**
-     * The startup shell commands
-     * @return 
-     */
-    public static String[] getStartup() {
-        return m_startup;
-    }
-    
-    /**
-     * Load configuration
-     *
-     * @param plugin parent plugin
-     * @return true if config loaded
-     */
-    public static boolean load(JavaPlugin plugin) {
-        if (plugin == null) {
-            return false;
+public class TeleportLocation {
+
+    private final double m_x;
+    private final double m_y;
+    private final double m_z;
+    private final float m_yaw;
+    private final float m_pitch;
+    private final String m_world;
+
+    public void teleport(Server server, Player player) {
+        if (server == null || player == null) {
+            return;
         }
 
-        plugin.saveDefaultConfig();        
-
-        Configuration config = plugin.getConfig();
-        ConfigurationSection mainSection = config.getConfigurationSection("RCUtils");
-        if (mainSection == null) {
-            return false;
+        World w = server.getWorld(m_world);
+        if (w == null) {
+            return;
         }
 
-        m_cbConfig = CommandBlockConfig.parse(mainSection.getConfigurationSection("commandBlocks"));
-        m_autoStopConfig = AutoStopConfig.parse(mainSection.getConfigurationSection("autoStop"));
-        m_teleportConfig = TeleportConfig.parse(mainSection.getConfigurationSection("teleport"));
-        
-        m_startup = mainSection.getStringList("startup").toArray(new String[0]);
-        
-        return true;
+        player.teleport(new Location(w, m_x, m_y, m_z, m_yaw, m_pitch));
+    }
+
+    public TeleportLocation(String world, double x, double y, double z, float yaw, float pitch) {
+        m_x = x;
+        m_y = y;
+        m_z = z;
+        m_yaw = yaw;
+        m_pitch = pitch;
+        m_world = world;
     }
 }
