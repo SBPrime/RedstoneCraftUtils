@@ -52,8 +52,10 @@
  */
 package org.primesoft.redstoneCraftUtils;
 
+import java.io.BufferedReader;
 import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.command.ConsoleCommandSender;
@@ -80,11 +82,22 @@ public class RCUtilsMain extends JavaPlugin {
 
     private static final String s_logFormat = "%s %s";
 
+    private static RCUtilsMain s_instance;
+
     private MetricsLite m_metrics;
 
     private CommandManager m_commandManager;
 
     private PlayerListener m_listener;
+
+    /**
+     * The server stop
+     */
+    private ServerStop m_serverStop;
+
+    public static RCUtilsMain getInstance() {
+        return s_instance;
+    }
 
     public static void log(String msg) {
         if (s_log == null || msg == null || s_prefix == null) {
@@ -102,12 +115,21 @@ public class RCUtilsMain extends JavaPlugin {
         }
     }
 
+    /**
+     * The server stop service
+     *
+     * @return
+     */
+    public ServerStop getServerStop() {
+        return m_serverStop;
+    }
+
     @Override
     public void onEnable() {
         PluginDescriptionFile desc = getDescription();
         s_prefix = String.format("[%s]", desc.getName());
         s_console = getServer().getConsoleSender();
-
+        s_instance = this;
         try {
             m_metrics = new MetricsLite(this);
             m_metrics.start();
@@ -127,22 +149,38 @@ public class RCUtilsMain extends JavaPlugin {
         m_listener = new PlayerListener(this);
         pm.registerEvents(m_listener, this);
 
+        executeStartup();
+
+        m_serverStop = new ServerStop(this);
+        m_serverStop.sheduleTest();
+
+        log("Enabled");
+    }
+
+    private void executeStartup() {
         Runtime rt = Runtime.getRuntime();
         for (String cmd : ConfigProvider.getStartup()) {
             try {
                 log("Executing: " + cmd);
                 Process pr = rt.exec(cmd);
+                pr.waitFor();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log("Out: " + line);
+                }
             } catch (IOException ex) {
+                log("Error executing startup command");
+            } catch (InterruptedException ex) {
                 log("Error executing startup command");
             }
         }
-
-        log("Enabled");
     }
 
     @Override
     public void onDisable() {
-
+        m_serverStop.stop();
         log("Disabled");
     }
 }

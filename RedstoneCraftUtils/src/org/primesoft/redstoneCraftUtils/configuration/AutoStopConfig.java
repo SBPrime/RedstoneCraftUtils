@@ -52,7 +52,6 @@
  */
 package org.primesoft.redstoneCraftUtils.configuration;
 
-import java.util.HashSet;
 import org.bukkit.configuration.ConfigurationSection;
 
 /**

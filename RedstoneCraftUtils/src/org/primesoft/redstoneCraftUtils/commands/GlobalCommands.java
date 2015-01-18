@@ -91,6 +91,8 @@ public class GlobalCommands {
         }
 
         say(player, "Config reloaded");
+        
+        RCUtilsMain.getInstance().getServerStop().sheduleTest();
         return true;
     }
 

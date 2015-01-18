@@ -52,68 +52,85 @@
  */
 package org.primesoft.redstoneCraftUtils;
 
-import org.bukkit.Location;
+import java.util.Collection;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
+import org.primesoft.redstoneCraftUtils.configuration.AutoStopConfig;
 import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
-import org.primesoft.redstoneCraftUtils.configuration.TeleportLocation;
 
 /**
  *
  * @author SBPrime
  */
-public class PlayerListener implements Listener {
+public class ServerStop implements Runnable {
 
+    private final static int TPS = 20;
+    private final JavaPlugin m_plugin;
     private final BukkitScheduler m_scheduler;
-    private final RCUtilsMain m_plugin;
+    private BukkitTask m_task;
+    private final Object m_mutex = new Object();
+    private long m_lastLogout = 0;
 
-    public PlayerListener(RCUtilsMain plugin) {
+    public ServerStop(JavaPlugin plugin) {
         m_plugin = plugin;
-        m_scheduler = plugin.getServer().getScheduler();
+        m_scheduler = m_plugin.getServer().getScheduler();
     }
 
-    private void teleport(final Player player, final Location location) {
-        m_scheduler.runTaskLater(m_plugin, new Runnable() {
-
-            @Override
-            public void run() {
-                player.teleport(location);
+    public void stop() {
+        synchronized (m_mutex) {
+            if (m_task != null) {
+                m_task.cancel();
             }
-        }, 3);
-    }
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-
-        TeleportLocation location = ConfigProvider.getTeleportConfig().getJoin();
-        if (location == null || player == null) {
-            return;
         }
-
-        location.teleport(player.getServer(), player);
-    }
-
-    @EventHandler
-    public void onPlayerRespawn(PlayerRespawnEvent event) {
-        Player player = event.getPlayer();
-
-        TeleportLocation location = ConfigProvider.getTeleportConfig().getDeath();
-        if (location == null || player == null) {
-            return;
-        }
-
-        location.teleport(player.getServer(), player);
     }
     
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        m_plugin.getServerStop().playerQuit();
+    public void sheduleTest() {        
+        synchronized (m_mutex) {
+            stop();
+            
+            AutoStopConfig config = ConfigProvider.getAutoStopConfig();
+            if (!config.isEnabled()) {
+                return;
+            }
+
+            int time = config.checkTime();
+            if (time < 1) {
+                return;
+            }
+
+            RCUtilsMain.log("Schedule auto server stop: " + time + "s");
+            time *= TPS;
+            m_task = m_scheduler.runTaskTimer(m_plugin, this, time, time);
+        }
+    }
+
+    @Override
+    public void run() {
+        RCUtilsMain.log("Auto server stop test");
+        long now = System.currentTimeMillis();
+        long delta = now - m_lastLogout;
+        
+        AutoStopConfig config = ConfigProvider.getAutoStopConfig();
+        if (!config.isEnabled()) {
+            return;
+        }
+        
+        long time = config.checkTime() * 1000;
+        if (delta < time) {
+            return;
+        }
+        
+        Player[] players = m_plugin.getServer().getOnlinePlayers();
+        if (players == null || players.length > 0) {
+            return;
+        }
+        
+        m_plugin.getServer().shutdown();
+    }
+
+    public void playerQuit() {
+        m_lastLogout = System.currentTimeMillis();
     }
 }
