@@ -51,94 +51,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.primesoft.redstoneCraftUtils.bungee;
+package org.primesoft.redstoneCraftUtils.bungee.utils;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.ConfigurationSection;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.file.FileConfiguration;
-import net.craftminecraft.bungee.bungeeyaml.pluginapi.ConfigurablePlugin;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.PluginDescription;
+import org.primesoft.redstoneCraftUtils.bungee.RCUtilsMain;
 
 /**
  *
  * @author SBPrime
  */
-public class RCUtilsMain extends ConfigurablePlugin {
-    private static Logger s_log;
-        
-    private static String s_prefix = null;
+public class ExceptionHelper {
 
-    private static final String s_logFormat = "%s %s";
+    private static void log(String m) {
+        RCUtilsMain.log(m);
+    }
 
-    private static RCUtilsMain s_instance;
-    
-    public static RCUtilsMain getInstance() {
-        return s_instance;
-    }
-    
-    public static void say(ProxiedPlayer player, String msg) {
-        if (player == null) {
-            log(msg);
-            return;
-        }
-        
-        player.sendMessage(ChatMessageType.CHAT, new TextComponent(msg));
-    }
-    
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
+    public static void printException(Throwable ex, String message) {
+        if (ex == null) {
             return;
         }
 
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
+        log("***********************************");
+        log(message);
+        log("***********************************");
+        log("* Exception: " + ex.getClass().getCanonicalName());
+        log("* Error message: " + ex.getLocalizedMessage());
+        log("* Stack: ");
+        printStack(ex, "* ");
+        log("***********************************");
     }
 
-    /**
-     * The event listener
-     */
-    private EventListener m_listener;
-        
-    private ServerStarter m_serverStarter;
-    
-    public ServerStarter getServerStarter() {
-        return m_serverStarter;
-    }
-    
-    @Override
-    public void onEnable() {
-        PluginDescription desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_instance = this;
-        s_log = getProxy().getLogger();
-
-        saveDefaultConfig();
-
-        m_listener = new EventListener(this);
-        getProxy().getPluginManager().registerListener(this, m_listener);
-        
-        FileConfiguration config = getConfig();
-        ConfigurationSection mainSection = null;
-        ConfigurationSection startupSection = null;
-        if (config != null) {
-            mainSection = config.getConfigurationSection("RCUtils");
+    public static void printStack(Throwable ex, String lead) {
+        for (StackTraceElement element : ex.getStackTrace()) {
+            log(lead + element.toString());
         }
-        if (mainSection != null) {
-            startupSection = mainSection.getConfigurationSection("startup");
-        }
-        m_serverStarter = new ServerStarter(this, startupSection);
-                
-        log("initialized!");
-    }
-
-    @Override
-    public void onDisable() {
-        
-        getProxy().getPluginManager().unregisterListener(m_listener);
-        log("disabling!");
     }
 }

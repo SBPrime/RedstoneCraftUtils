@@ -50,95 +50,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.primesoft.redstoneCraftUtils.bungee;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.ConfigurationSection;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.file.FileConfiguration;
-import net.craftminecraft.bungee.bungeeyaml.pluginapi.ConfigurablePlugin;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.ServerPing;
+import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.ServerConnectEvent;
 import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.PluginDescription;
+import net.md_5.bungee.event.EventHandler;
+import org.primesoft.redstoneCraftUtils.bungee.utils.Ping;
 
 /**
  *
  * @author SBPrime
  */
-public class RCUtilsMain extends ConfigurablePlugin {
-    private static Logger s_log;
-        
-    private static String s_prefix = null;
+public class EventListener implements Listener {
 
-    private static final String s_logFormat = "%s %s";
+    private final RCUtilsMain m_parent;
+    private final ProxyServer m_proxy;
 
-    private static RCUtilsMain s_instance;
-    
-    public static RCUtilsMain getInstance() {
-        return s_instance;
+    public void log(String s) {
+        RCUtilsMain.log(s);
+    }
+
+    public EventListener(RCUtilsMain parent) {
+        m_parent = parent;
+        m_proxy = m_parent.getProxy();
     }
     
-    public static void say(ProxiedPlayer player, String msg) {
-        if (player == null) {
-            log(msg);
-            return;
+    @EventHandler
+    public void onServerConnectEvent(ServerConnectEvent e) {
+        final ServerInfo server = e.getTarget();
+        final ProxiedPlayer player = e.getPlayer();
+
+        ServerPing result = Ping.ping(server);                
+        if (result == null) {
+            e.setCancelled(true);
+            
+            m_parent.getServerStarter().startServer(server, player);
         }
-        
-        player.sendMessage(ChatMessageType.CHAT, new TextComponent(msg));
-    }
-    
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
-            return;
-        }
-
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
-    }
-
-    /**
-     * The event listener
-     */
-    private EventListener m_listener;
-        
-    private ServerStarter m_serverStarter;
-    
-    public ServerStarter getServerStarter() {
-        return m_serverStarter;
-    }
-    
-    @Override
-    public void onEnable() {
-        PluginDescription desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_instance = this;
-        s_log = getProxy().getLogger();
-
-        saveDefaultConfig();
-
-        m_listener = new EventListener(this);
-        getProxy().getPluginManager().registerListener(this, m_listener);
-        
-        FileConfiguration config = getConfig();
-        ConfigurationSection mainSection = null;
-        ConfigurationSection startupSection = null;
-        if (config != null) {
-            mainSection = config.getConfigurationSection("RCUtils");
-        }
-        if (mainSection != null) {
-            startupSection = mainSection.getConfigurationSection("startup");
-        }
-        m_serverStarter = new ServerStarter(this, startupSection);
-                
-        log("initialized!");
-    }
-
-    @Override
-    public void onDisable() {
-        
-        getProxy().getPluginManager().unregisterListener(m_listener);
-        log("disabling!");
     }
 }

@@ -50,95 +50,57 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.primesoft.redstoneCraftUtils.bungee.utils;
 
-package org.primesoft.redstoneCraftUtils.bungee;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.ConfigurationSection;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.file.FileConfiguration;
-import net.craftminecraft.bungee.bungeeyaml.pluginapi.ConfigurablePlugin;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.PluginDescription;
+import net.md_5.bungee.api.Callback;
+import net.md_5.bungee.api.ServerPing;
+import net.md_5.bungee.api.config.ServerInfo;
 
 /**
  *
  * @author SBPrime
  */
-public class RCUtilsMain extends ConfigurablePlugin {
-    private static Logger s_log;
-        
-    private static String s_prefix = null;
+public class Ping {
 
-    private static final String s_logFormat = "%s %s";
-
-    private static RCUtilsMain s_instance;
-    
-    public static RCUtilsMain getInstance() {
-        return s_instance;
-    }
-    
-    public static void say(ProxiedPlayer player, String msg) {
-        if (player == null) {
-            log(msg);
-            return;
-        }
-        
-        player.sendMessage(ChatMessageType.CHAT, new TextComponent(msg));
-    }
-    
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
-            return;
-        }
-
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
-    }
+    private final static long TIMEOUT = 1000;
 
     /**
-     * The event listener
+     * Ping the server
+     * @param server
+     * @return 
      */
-    private EventListener m_listener;
-        
-    private ServerStarter m_serverStarter;
-    
-    public ServerStarter getServerStarter() {
-        return m_serverStarter;
-    }
-    
-    @Override
-    public void onEnable() {
-        PluginDescription desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_instance = this;
-        s_log = getProxy().getLogger();
-
-        saveDefaultConfig();
-
-        m_listener = new EventListener(this);
-        getProxy().getPluginManager().registerListener(this, m_listener);
-        
-        FileConfiguration config = getConfig();
-        ConfigurationSection mainSection = null;
-        ConfigurationSection startupSection = null;
-        if (config != null) {
-            mainSection = config.getConfigurationSection("RCUtils");
+    public static ServerPing ping(final ServerInfo server) {
+        if (server == null) {
+            return null;
         }
-        if (mainSection != null) {
-            startupSection = mainSection.getConfigurationSection("startup");
-        }
-        m_serverStarter = new ServerStarter(this, startupSection);
-                
-        log("initialized!");
-    }
 
-    @Override
-    public void onDisable() {
+        final Object mutex = new Object();
+        final InOutParam<ServerPing> result = InOutParam.Out();
+
+        server.ping(new Callback<ServerPing>() {
+
+            @Override
+            public void done(ServerPing v, Throwable thrwbl) {
+                synchronized (mutex) {
+                    result.setValue(v);
+                    mutex.notifyAll();
+                }
+            }
+        });
+
+        synchronized (mutex) {
+            if (!result.isSet()) {
+                try {
+                    mutex.wait(TIMEOUT);
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
         
-        getProxy().getPluginManager().unregisterListener(m_listener);
-        log("disabling!");
+        if (result.isSet()) {
+            return result.getValue();
+        }
+
+        return null;
     }
 }

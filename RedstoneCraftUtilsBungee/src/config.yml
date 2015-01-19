@@ -1,0 +1,3 @@
+RCUtils:
+  startup:
+    server1: start.sh

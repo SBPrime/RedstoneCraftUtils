@@ -50,95 +50,84 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-package org.primesoft.redstoneCraftUtils.bungee;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.ConfigurationSection;
-import net.craftminecraft.bungee.bungeeyaml.bukkitapi.file.FileConfiguration;
-import net.craftminecraft.bungee.bungeeyaml.pluginapi.ConfigurablePlugin;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.PluginDescription;
+package org.primesoft.redstoneCraftUtils.bungee.utils;
 
 /**
- *
+ * This is a helper class that allows you to add output (and input) 
+ * parameters to java functions
  * @author SBPrime
  */
-public class RCUtilsMain extends ConfigurablePlugin {
-    private static Logger s_log;
-        
-    private static String s_prefix = null;
-
-    private static final String s_logFormat = "%s %s";
-
-    private static RCUtilsMain s_instance;
-    
-    public static RCUtilsMain getInstance() {
-        return s_instance;
-    }
-    
-    public static void say(ProxiedPlayer player, String msg) {
-        if (player == null) {
-            log(msg);
-            return;
-        }
-        
-        player.sendMessage(ChatMessageType.CHAT, new TextComponent(msg));
-    }
-    
-    public static void log(String msg) {
-        if (s_log == null || msg == null || s_prefix == null) {
-            return;
-        }
-
-        s_log.log(Level.INFO, String.format(s_logFormat, s_prefix, msg));
-    }
-
+public class InOutParam<T> {       
     /**
-     * The event listener
+     * Initialize reference parame (in and out value)
+     * @param <T>
+     * @param value
+     * @return 
      */
-    private EventListener m_listener;
-        
-    private ServerStarter m_serverStarter;
-    
-    public ServerStarter getServerStarter() {
-        return m_serverStarter;
+    public static <T> InOutParam<T> Ref(T value)
+    {
+        return new InOutParam<T>(value);
     }
     
-    @Override
-    public void onEnable() {
-        PluginDescription desc = getDescription();
-        s_prefix = String.format("[%s]", desc.getName());
-        s_instance = this;
-        s_log = getProxy().getLogger();
-
-        saveDefaultConfig();
-
-        m_listener = new EventListener(this);
-        getProxy().getPluginManager().registerListener(this, m_listener);
-        
-        FileConfiguration config = getConfig();
-        ConfigurationSection mainSection = null;
-        ConfigurationSection startupSection = null;
-        if (config != null) {
-            mainSection = config.getConfigurationSection("RCUtils");
-        }
-        if (mainSection != null) {
-            startupSection = mainSection.getConfigurationSection("startup");
-        }
-        m_serverStarter = new ServerStarter(this, startupSection);
-                
-        log("initialized!");
+    /**
+     * Initialize output param (out only)
+     * @param <T>
+     * @return 
+     */
+    public static <T> InOutParam<T> Out() {
+        return new InOutParam<T>();
     }
-
-    @Override
-    public void onDisable() {
+    
+    /**
+     * Is the value set
+     */
+    private boolean m_isSet;
+    
+    /**
+     * The parameter value
+     */
+    private T m_value;
+    
+    
+    /**
+     * Create new instance of ref param
+     * @param value 
+     */
+    private InOutParam(T value)
+    {
+        m_value = value;
+        m_isSet = true;
+    }
+    
+    /**
+     * Create new instance of out param
+     */
+    private InOutParam(){
+        m_isSet = false;
+    }
+    
+    
+    /**
+     * Get the parameter value
+     * @return 
+     */
+    public T getValue()
+    {        
+        if (m_isSet) {
+            return m_value;
+        }
         
-        getProxy().getPluginManager().unregisterListener(m_listener);
-        log("disabling!");
+        throw new IllegalStateException("Output parameter not set");
+    }
+    
+    
+    public void setValue(T value)
+    {
+        m_isSet = true;
+        m_value = value;
+    }
+    
+    public boolean isSet() {
+        return m_isSet;
     }
 }
