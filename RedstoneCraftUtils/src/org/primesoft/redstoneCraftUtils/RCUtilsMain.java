@@ -63,6 +63,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.primesoft.redstoneCraftUtils.commands.CommandBlockCommands;
 import org.primesoft.redstoneCraftUtils.commands.GlobalCommands;
 import org.primesoft.redstoneCraftUtils.commands.utils.CommandManager;
@@ -73,6 +74,8 @@ import org.primesoft.redstoneCraftUtils.mcstats.MetricsLite;
  * @author SBPrime
  */
 public class RCUtilsMain extends JavaPlugin {
+
+    private static final int TPS = 20;
 
     private static final Logger s_log = Logger.getLogger("Minecraft.AWE");
 
@@ -88,7 +91,20 @@ public class RCUtilsMain extends JavaPlugin {
 
     private CommandManager m_commandManager;
 
+    /**
+     * The player listener
+     */
     private PlayerListener m_listener;
+    
+    /**
+     * The server ping listener
+     */
+    private PingListener m_pingListener;
+
+    /**
+     * THe ping task
+     */
+    private BukkitTask m_pingTask;
 
     /**
      * The server stop
@@ -113,7 +129,7 @@ public class RCUtilsMain extends JavaPlugin {
         } else {
             player.sendRawMessage(msg);
         }
-    }
+    }    
 
     /**
      * The server stop service
@@ -145,9 +161,20 @@ public class RCUtilsMain extends JavaPlugin {
         m_commandManager.initializeCommands(GlobalCommands.class);
         m_commandManager.initializeCommands(CommandBlockCommands.class);
 
-        PluginManager pm = getServer().getPluginManager();
+        final PluginManager pm = getServer().getPluginManager();
         m_listener = new PlayerListener(this);
+        m_pingListener = new PingListener();
+
         pm.registerEvents(m_listener, this);
+        final RCUtilsMain main = this;
+        
+        getServer().getScheduler().runTaskLater(this, new Runnable() {
+
+            @Override
+            public void run() {
+                pm.registerEvents(m_pingListener, main);
+            }
+        }, TPS * 2);
 
         executeStartup();
 

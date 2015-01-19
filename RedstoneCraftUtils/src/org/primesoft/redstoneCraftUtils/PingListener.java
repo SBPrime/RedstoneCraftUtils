@@ -53,66 +53,21 @@
 package org.primesoft.redstoneCraftUtils;
 
 import java.text.SimpleDateFormat;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import java.util.Date;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.primesoft.redstoneCraftUtils.configuration.ConfigProvider;
-import org.primesoft.redstoneCraftUtils.configuration.TeleportLocation;
+import org.bukkit.event.server.ServerListPingEvent;
 
 /**
  *
  * @author SBPrime
  */
-public class PlayerListener implements Listener {
-    private final BukkitScheduler m_scheduler;
-    private final RCUtilsMain m_plugin;
-
-    public PlayerListener(RCUtilsMain plugin) {
-        m_plugin = plugin;
-        m_scheduler = plugin.getServer().getScheduler();
-    }
-
-    private void teleport(final Player player, final Location location) {
-        m_scheduler.runTaskLater(m_plugin, new Runnable() {
-
-            @Override
-            public void run() {
-                player.teleport(location);
-            }
-        }, 3);
-    }
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-
-        TeleportLocation location = ConfigProvider.getTeleportConfig().getJoin();
-        if (location == null || player == null) {
-            return;
-        }
-
-        location.teleport(player.getServer(), player);
-    }
-
-    @EventHandler
-    public void onPlayerRespawn(PlayerRespawnEvent event) {
-        Player player = event.getPlayer();
-
-        TeleportLocation location = ConfigProvider.getTeleportConfig().getDeath();
-        if (location == null || player == null) {
-            return;
-        }
-
-        location.teleport(player.getServer(), player);
-    }
+public class PingListener implements Listener {
+    private static final SimpleDateFormat s_dateFormater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        m_plugin.getServerStop().playerQuit();
+    public void onServerListPingEvent(ServerListPingEvent e){
+        e.setMotd(s_dateFormater.format(new Date(System.currentTimeMillis())));
     }
+    
 }
