@@ -52,6 +52,9 @@
  */
 package org.primesoft.redstoneCraftUtils.bungee.utils;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import net.md_5.bungee.api.Callback;
 import net.md_5.bungee.api.ServerPing;
 import net.md_5.bungee.api.config.ServerInfo;
@@ -62,16 +65,18 @@ import net.md_5.bungee.api.config.ServerInfo;
  */
 public class Ping {
 
+    private final static SimpleDateFormat DATE_FORMATER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final static long TIMEOUT = 1000;
 
     /**
      * Ping the server
+     *
      * @param server
-     * @return 
+     * @return
      */
-    public static ServerPing ping(final ServerInfo server) {
+    public static boolean ping(final ServerInfo server) {
         if (server == null) {
-            return null;
+            return false;
         }
 
         final Object mutex = new Object();
@@ -96,11 +101,31 @@ public class Ping {
                 }
             }
         }
-        
-        if (result.isSet()) {
-            return result.getValue();
+
+        if (!result.isSet()) {
+            return false;
         }
 
-        return null;
+        ServerPing ping = result.getValue();
+        Date date = null;
+
+        if (ping != null) {
+            String description = ping.getDescription();
+            try {
+                date = DATE_FORMATER.parse(description);
+            } catch (ParseException ex) {
+                date = null;
+            }
+        }
+
+        long delta = -1;
+        if (date != null) {
+            long nowTime = System.currentTimeMillis();
+            long serverTime = date.getTime();
+
+            delta = Math.abs(serverTime - nowTime);
+        }
+
+        return (delta != -1 && delta < 5000);
     }
 }

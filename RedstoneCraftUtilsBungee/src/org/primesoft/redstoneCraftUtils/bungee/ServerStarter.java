@@ -52,37 +52,18 @@
  */
 package org.primesoft.redstoneCraftUtils.bungee;
 
-import com.sun.org.apache.bcel.internal.generic.AALOAD;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelProgressivePromise;
-import io.netty.channel.ChannelPromise;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.EventExecutor;
 import java.io.IOException;
-import java.net.SocketAddress;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.craftminecraft.bungee.bungeeyaml.bukkitapi.ConfigurationSection;
-import net.md_5.bungee.UserConnection;
-import net.md_5.bungee.api.Callback;
-import net.md_5.bungee.api.ServerPing;
-import net.md_5.bungee.api.config.ListenerInfo;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.scheduler.TaskScheduler;
-import net.md_5.bungee.connection.InitialHandler;
-import net.md_5.bungee.netty.ChannelWrapper;
 import org.primesoft.redstoneCraftUtils.bungee.utils.ExceptionHelper;
 import org.primesoft.redstoneCraftUtils.bungee.utils.InOutParam;
 import org.primesoft.redstoneCraftUtils.bungee.utils.Ping;
@@ -93,13 +74,41 @@ import org.primesoft.redstoneCraftUtils.bungee.utils.Ping;
  */
 public class ServerStarter {
 
-    private final static SimpleDateFormat DATE_FORMATER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final static int WAIT_TIME = 5000;
     private final static int RETRY = 60;
 
+    private void log(String log) {
+        RCUtilsMain.log(log);
+    }
+
+    private void say(Iterable<ProxiedPlayer> players, String msg) {
+        for (ProxiedPlayer player : players) {
+            say(player, msg);
+        }
+    }
+
+    private void say(ProxiedPlayer player, String msg) {
+        RCUtilsMain.say(player, msg);
+    }
+
+    /**
+     * The mta access mutex
+     */
     private final Object m_mutex;
 
+    /**
+     * The startup commands for servers
+     */
     private final HashMap<String, String> m_startupCommand;
+
+    /**
+     * PLayers waiting for server startup
+     */
+    private final HashMap<String, HashMap<UUID, ProxiedPlayer>> m_waitingPlayers;
+
+    /**
+     * The plugin main
+     */
     private final RCUtilsMain m_plugin;
     private final TaskScheduler m_scheduler;
 
@@ -107,12 +116,13 @@ public class ServerStarter {
         m_plugin = plugin;
         m_mutex = new Object();
         m_startupCommand = new HashMap<String, String>();
+        m_waitingPlayers = new HashMap<String, HashMap<UUID, ProxiedPlayer>>();
 
         RCUtilsMain.log("Server startup commands:");
         if (configuration != null) {
             for (String key : configuration.getKeys(false)) {
                 String command = configuration.getString(key);
-                RCUtilsMain.log(" * " + key + " -> " + command);
+                log(" * " + key + " -> " + command);
 
                 m_startupCommand.put(key.toLowerCase(), command);
             }
@@ -121,27 +131,56 @@ public class ServerStarter {
         m_scheduler = m_plugin.getProxy().getScheduler();
     }
 
-    public void startServer(final ServerInfo server, final ProxiedPlayer player) {
+    public void waitForServer(final ServerInfo server, final ProxiedPlayer player) {
         if (server == null || player == null) {
             return;
         }
 
         final String name = server.getName().toLowerCase();
+        final UUID uuid = player.getUniqueId();
         synchronized (m_mutex) {
             if (!m_startupCommand.containsKey(name)) {
-                RCUtilsMain.log("Server " + name + " not configured for auto start.");
-                RCUtilsMain.say(player, "Server " + name + " is offline.");
+                log("Server " + name + " not configured for auto start.");
+                say(player, ChatColor.YELLOW + "Server "
+                        + ChatColor.WHITE + name + ChatColor.YELLOW + " is offline. Not configured for auto start.");
                 return;
             }
 
-            RCUtilsMain.say(player, "Starting server " + name + "...");
+            final HashMap<UUID, ProxiedPlayer> playerList;
+            if (m_waitingPlayers.containsKey(name)) {
+                playerList = m_waitingPlayers.get(name);
+
+                synchronized (playerList) {
+                    if (playerList.containsKey(uuid)) {
+                        say(player, ChatColor.YELLOW + "You are already waiting for "
+                                + ChatColor.WHITE + name + ChatColor.YELLOW + " to start.");
+
+                        playerList.remove(uuid);
+                        playerList.put(uuid, player);
+                    } else {
+                        playerList.put(uuid, player);
+                        say(player, ChatColor.YELLOW + "Waiting for server "
+                                + ChatColor.WHITE + name + ChatColor.YELLOW + " to start.");
+                    }
+                }
+                return;
+            }
+
+            playerList = new HashMap<UUID, ProxiedPlayer>();
+
+            synchronized (playerList) {
+                playerList.put(uuid, player);
+                m_waitingPlayers.put(name, playerList);
+            }
+            say(player, ChatColor.YELLOW + "Starting server "
+                    + ChatColor.WHITE + name + ChatColor.YELLOW + "...");
             final String command = m_startupCommand.get(name);
+            log("Starting server " + server.getName() + "..." + command);
 
             m_scheduler.runAsync(m_plugin, new Runnable() {
-
                 @Override
                 public void run() {
-                    start(server, command, player);
+                    startServer(server, command, playerList);
                 }
             });
         }
@@ -154,19 +193,27 @@ public class ServerStarter {
      * @param command
      * @param player
      */
-    private void start(final ServerInfo server, String command, final ProxiedPlayer player) {
+    private void startServer(final ServerInfo server, String command,
+            final HashMap<UUID, ProxiedPlayer> playerList) {
         final String serverName = server.getName();
-        final Object mutex = new Object();
 
         try {
             Runtime.getRuntime().exec(command);
         } catch (final IOException ex) {
             invoke(new Runnable() {
-
                 @Override
                 public void run() {
-                    ExceptionHelper.printException(ex, "Unable to start server");
-                    RCUtilsMain.say(player, "Unable to start server " + serverName + ", server is offline.");
+                    synchronized (m_mutex) {
+                        m_waitingPlayers.remove(serverName);
+
+                        ExceptionHelper.printException(ex, "Unable to start server " + serverName);
+
+                        synchronized (playerList) {
+                            filterPlayers(playerList);
+                            say(playerList.values(), ChatColor.YELLOW + "Error starting server "
+                                    + ChatColor.WHITE + serverName + ChatColor.YELLOW + ", server is offline.");
+                        }
+                    }
                 }
             });
 
@@ -174,7 +221,6 @@ public class ServerStarter {
         }
 
         final InOutParam<Boolean> isOnline = InOutParam.Ref(false);
-        final InOutParam<Boolean> tryingToConnect = InOutParam.Ref(false);
 
         for (int i = 0; i < RETRY && !isOnline.getValue(); i++) {
             try {
@@ -182,69 +228,107 @@ public class ServerStarter {
             } catch (InterruptedException ex) {
             }
 
-            final int run = i;
+            final int run = i + 1;
             invoke(new Runnable() {
                 @Override
                 public void run() {
-                    testConnection(run, mutex,
-                            isOnline, tryingToConnect,
-                            server, player);
+                    testConnection(server, isOnline);
+
+                    synchronized (playerList) {
+                        filterPlayers(playerList);
+
+                        if (!isOnline.getValue()) {
+                            say(playerList.values(), ChatColor.YELLOW + "Waiting for server "
+                                    + ChatColor.WHITE + server.getName() + ChatColor.YELLOW + " to start "
+                                    + ChatColor.WHITE + "(" + run + "/" + RETRY + ")");
+                        }
+                    }
                 }
             });
-        }
-
-        if (isOnline.getValue()) {
-            return;
         }
 
         invoke(new Runnable() {
             @Override
             public void run() {
-                RCUtilsMain.log("Server did not start in the required time");
-                RCUtilsMain.say(player, "Unable to start server " + serverName + ", server is offline.");
+                synchronized (m_mutex) {
+                    m_waitingPlayers.remove(serverName);
+
+                    synchronized (playerList) {
+                        filterPlayers(playerList);
+
+                        if (isOnline.getValue()) {
+                            log("Server " + serverName + " started");
+                            connect(playerList.values(), server);
+                        } else {
+                            log("Server " + serverName + " did not start in the required time");
+                            say(playerList.values(), ChatColor.YELLOW + "Unable to start server "
+                                    + ChatColor.WHITE + serverName + ChatColor.YELLOW + ", server is offline.");
+                        }
+                    }
+                }
             }
         });
     }
 
-    private void testConnection(int run, final Object mutex,
-            final InOutParam<Boolean> isOnline, final InOutParam<Boolean> tryingToConnect,
-            ServerInfo server, ProxiedPlayer player) {
-
-        ServerPing ping = Ping.ping(server);
-        Date date = null;
-
-        if (ping != null) {
-            String description = ping.getDescription();
+    /**
+     * Connect all players from list to server
+     *
+     * @param playerList
+     * @param server
+     */
+    private void connect(Iterable<ProxiedPlayer> playerList, ServerInfo server) {
+        final String name = server.getName();
+        for (ProxiedPlayer player : playerList) {
+            say(player, ChatColor.YELLOW + "Connectiong to " + 
+                    ChatColor.WHITE + name + ChatColor.YELLOW + " server.");
             try {
-                date = DATE_FORMATER.parse(description);
-            } catch (ParseException ex) {
-                date = null;
+                player.connect(server);
+            } catch (Exception ex) {
+                //Ignore error
             }
         }
-
-        long delta = -1;
-        if (date != null) {
-            long nowTime = System.currentTimeMillis();
-            long serverTime = date.getTime();
-
-            delta = Math.abs(serverTime - nowTime);
-        }
-
-        if (delta != -1 && delta < 5000 && !tryingToConnect.getValue()) {
-            RCUtilsMain.log("Got ping trying to connect.");
-            tryingToConnect.setValue(true);
-
-            player.connect(server);
-            synchronized (mutex) {
-                isOnline.setValue(true);
-            }
-            
-            return;
-        }
-
-        RCUtilsMain.say(player, "Waiting for server " + server.getName() + " to start (" + run + "/" + RETRY + ")");
     }
 
+    /**
+     * Filter player list
+     *
+     * @param playerList
+     */
+    private void filterPlayers(HashMap<UUID, ProxiedPlayer> playerList) {
+        final ProxiedPlayer[] players = m_plugin.getProxy().getPlayers().toArray(new ProxiedPlayer[0]);
+        final HashMap<UUID, ProxiedPlayer> currentPlayers = new HashMap<UUID, ProxiedPlayer>();
+
+        for (ProxiedPlayer player : players) {
+            currentPlayers.put(player.getUniqueId(), player);
+        }
+
+        UUID[] uuids = playerList.keySet().toArray(new UUID[0]);
+        playerList.clear();
+        for (UUID uuid : uuids) {
+            if (currentPlayers.containsKey(uuid)) {
+                playerList.put(uuid, currentPlayers.get(uuid));
+            }
+        }
+    }
+
+    /**
+     * Test the server connection
+     *
+     * @param server
+     * @param isOnline
+     */
+    private void testConnection(ServerInfo server, final InOutParam<Boolean> isOnline) {
+        if (Ping.ping(server)) {
+            RCUtilsMain.log("Got ping to " + server.getName());
+            isOnline.setValue(true);
+        }
+    }
+
+    /**
+     * Invoke the runnable in the MTA
+     *
+     * @param runnable
+     */
     private void invoke(final Runnable runnable) {
         final Object mutex = new Object();
         final InOutParam<Boolean> done = InOutParam.Out();

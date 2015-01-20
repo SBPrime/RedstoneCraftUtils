@@ -53,7 +53,6 @@
 package org.primesoft.redstoneCraftUtils.bungee;
 
 import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.ServerPing;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ServerConnectEvent;
@@ -84,11 +83,10 @@ public class EventListener implements Listener {
         final ServerInfo server = e.getTarget();
         final ProxiedPlayer player = e.getPlayer();
 
-        ServerPing result = Ping.ping(server);                
-        if (result == null) {
+        if (!Ping.ping(server)) {
             e.setCancelled(true);
             
-            m_parent.getServerStarter().startServer(server, player);
+            m_parent.getServerStarter().waitForServer(server, player);
         }
     }
 }
