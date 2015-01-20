@@ -1,7 +1,7 @@
 name: RedstoneCraftUtils
 load: STARTUP
 main: org.primesoft.redstoneCraftUtils.RCUtilsMain
-version: 0.2
+version: 0.5
 website: 
 description: Util commands required by my server
 authors: [SBPrime]
