@@ -53,7 +53,6 @@
 package org.primesoft.redstoneCraftUtils.bungee;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -131,36 +130,37 @@ public class ServerStarter {
         m_scheduler = m_plugin.getProxy().getScheduler();
     }
 
-    public void waitForServer(final ServerInfo server, final ProxiedPlayer player) {
+    public void waitForServer(final ServerInfo server, 
+            final ProxiedPlayer player) {
         if (server == null || player == null) {
             return;
         }
 
-        final String name = server.getName().toLowerCase();
+        final String serverName = server.getName().toLowerCase();
         final UUID uuid = player.getUniqueId();
         synchronized (m_mutex) {
-            if (!m_startupCommand.containsKey(name)) {
-                log("Server " + name + " not configured for auto start.");
+            if (!m_startupCommand.containsKey(serverName)) {
+                log("Server " + serverName + " not configured for auto start.");
                 say(player, ChatColor.YELLOW + "Server "
-                        + ChatColor.WHITE + name + ChatColor.YELLOW + " is offline. Not configured for auto start.");
+                        + ChatColor.WHITE + serverName + ChatColor.YELLOW + " is offline. Not configured for auto start.");
                 return;
             }
 
             final HashMap<UUID, ProxiedPlayer> playerList;
-            if (m_waitingPlayers.containsKey(name)) {
-                playerList = m_waitingPlayers.get(name);
+            if (m_waitingPlayers.containsKey(serverName)) {
+                playerList = m_waitingPlayers.get(serverName);
 
                 synchronized (playerList) {
                     if (playerList.containsKey(uuid)) {
                         say(player, ChatColor.YELLOW + "You are already waiting for "
-                                + ChatColor.WHITE + name + ChatColor.YELLOW + " to start.");
+                                + ChatColor.WHITE + serverName + ChatColor.YELLOW + " to start.");
 
                         playerList.remove(uuid);
                         playerList.put(uuid, player);
                     } else {
                         playerList.put(uuid, player);
                         say(player, ChatColor.YELLOW + "Waiting for server "
-                                + ChatColor.WHITE + name + ChatColor.YELLOW + " to start.");
+                                + ChatColor.WHITE + serverName + ChatColor.YELLOW + " to start.");
                     }
                 }
                 return;
@@ -170,17 +170,17 @@ public class ServerStarter {
 
             synchronized (playerList) {
                 playerList.put(uuid, player);
-                m_waitingPlayers.put(name, playerList);
+                m_waitingPlayers.put(serverName, playerList);
             }
             say(player, ChatColor.YELLOW + "Starting server "
-                    + ChatColor.WHITE + name + ChatColor.YELLOW + "...");
-            final String command = m_startupCommand.get(name);
-            log("Starting server " + server.getName() + "..." + command);
+                    + ChatColor.WHITE + serverName + ChatColor.YELLOW + "...");
+            final String command = m_startupCommand.get(serverName);
+            log("Starting server " + serverName + "..." + command);
 
             m_scheduler.runAsync(m_plugin, new Runnable() {
                 @Override
                 public void run() {
-                    startServer(server, command, playerList);
+                    startServer(server, serverName, command, playerList);
                 }
             });
         }
@@ -193,9 +193,9 @@ public class ServerStarter {
      * @param command
      * @param player
      */
-    private void startServer(final ServerInfo server, String command,
+    private void startServer(final ServerInfo server, final String serverName, 
+            String command,
             final HashMap<UUID, ProxiedPlayer> playerList) {
-        final String serverName = server.getName();
 
         try {
             Runtime.getRuntime().exec(command);
@@ -232,14 +232,14 @@ public class ServerStarter {
             invoke(new Runnable() {
                 @Override
                 public void run() {
-                    testConnection(server, isOnline);
+                    testConnection(server, serverName, isOnline);
 
                     synchronized (playerList) {
                         filterPlayers(playerList);
 
                         if (!isOnline.getValue()) {
                             say(playerList.values(), ChatColor.YELLOW + "Waiting for server "
-                                    + ChatColor.WHITE + server.getName() + ChatColor.YELLOW + " to start "
+                                    + ChatColor.WHITE + serverName + ChatColor.YELLOW + " to start "
                                     + ChatColor.WHITE + "(" + run + "/" + RETRY + ")");
                         }
                     }
@@ -258,7 +258,7 @@ public class ServerStarter {
 
                         if (isOnline.getValue()) {
                             log("Server " + serverName + " started");
-                            connect(playerList.values(), server);
+                            connect(playerList.values(), server, serverName);
                         } else {
                             log("Server " + serverName + " did not start in the required time");
                             say(playerList.values(), ChatColor.YELLOW + "Unable to start server "
@@ -276,11 +276,11 @@ public class ServerStarter {
      * @param playerList
      * @param server
      */
-    private void connect(Iterable<ProxiedPlayer> playerList, ServerInfo server) {
-        final String name = server.getName();
+    private void connect(Iterable<ProxiedPlayer> playerList, ServerInfo server,
+            final String serverName) {        
         for (ProxiedPlayer player : playerList) {
             say(player, ChatColor.YELLOW + "Connectiong to " + 
-                    ChatColor.WHITE + name + ChatColor.YELLOW + " server.");
+                    ChatColor.WHITE + serverName + ChatColor.YELLOW + " server.");
             try {
                 player.connect(server);
             } catch (Exception ex) {
@@ -317,9 +317,10 @@ public class ServerStarter {
      * @param server
      * @param isOnline
      */
-    private void testConnection(ServerInfo server, final InOutParam<Boolean> isOnline) {
+    private void testConnection(ServerInfo server, String serverName,
+            final InOutParam<Boolean> isOnline) {
         if (Ping.ping(server)) {
-            RCUtilsMain.log("Got ping to " + server.getName());
+            RCUtilsMain.log("Got ping to " + serverName);
             isOnline.setValue(true);
         }
     }
